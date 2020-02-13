@@ -1,0 +1,33 @@
+{
+    "tag": "medium_grid",
+    "data": {
+      "dataset_type": "grid",
+      "n": 5,
+      "time_periods": 4,
+      "days": 100,
+      "orders_density": 2,
+      "number_of_cars": 100,
+      "time_periods_per_hour": 4,
+      "order_distr": "airport"
+    },
+    "solver": {
+      "cA2C": {
+        "iterations": 2,
+        "epsilon": 0.5,
+        "gamma": 0.9,
+        "learning_rate": 1e-3,
+        "weight_poorest": 0,
+        "normalize_rewards": 1,
+        "minimum_reward": 0,
+        "batch_size": 100,
+        "include_income_to_observation": 0,
+        "poorest_first": 1,
+        "idle_reward": 1
+      }
+    },
+    "problem": {
+      "wc": 0.0,
+      "count_neighbors": 0
+    },
+    "full_rerun": 1
+}

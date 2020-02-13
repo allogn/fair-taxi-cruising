@@ -1,0 +1,24 @@
+{
+    "tag": "star",
+    "data": {
+      "dataset_type": "grid",
+      "n": 7,
+      "time_periods": 10,
+      "days": 50,
+      "order_distr": "star",
+      "orders_density": 20,
+      "number_of_cars": 100,
+      "time_periods_per_hour": 10
+    },
+    "problem": {
+      "wc": 0.3
+    },
+    "solver": {
+      "Gym": {
+        "num_cpu": 4,
+        "training_iterations": 500,
+        "testing_iterations": 10
+      }
+    },
+    "full_rerun": 1
+}

@@ -1,0 +1,31 @@
+{
+    "tag": "star",
+    "data": {
+      "dataset_type": "hexagon",
+      "n": 5,
+      "time_periods": 10,
+      "days": 100,
+      "order_distr": "star",
+      "orders_density": 100,
+      "number_of_cars": 100,
+      "time_periods_per_hour": 2
+    },
+    "problem": {
+      "wc": 0.1,
+      "testing_epochs": 10,
+      "count_neighbors": 1
+    },
+    "solver": {
+      "RobustGym": {
+        "num_cpu": 4,
+        "training_iterations": 5000,
+        "weight_poorest": 1,
+        "normalize_rewards": 1,
+        "minimum_reward": 0,
+        "include_income_to_observation": 1
+      },
+      "No": {},
+      "Diff": {}
+    },
+    "full_rerun": 1
+}

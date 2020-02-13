@@ -1,0 +1,29 @@
+{
+    "tag": "robust_medium_grid",
+    "data": {
+      "dataset_type": "hexagon",
+      "n": 10,
+      "time_periods": 20,
+      "days": 100,
+      "orders_density": 0.05,
+      "number_of_cars": 1000,
+      "time_periods_per_hour": 4,
+      "order_distr": "centered"
+    },
+    "solver": {
+      "Diff": {},
+      "RobustGym": {
+        "num_cpu": 20,
+        "training_iterations": 50000,
+        "weight_poorest": 0,
+        "normalize_rewards": 0,
+        "minimum_reward": 0,
+        "include_income_to_observation": 1,
+        "poorest_first": 1
+      }
+    },
+    "problem": {
+      "wc": 0.01
+    },
+    "full_rerun": 1
+}

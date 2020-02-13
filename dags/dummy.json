@@ -1,0 +1,9 @@
+{
+    "tag": "dummy",
+    "solver": {
+      "Dummy": {
+        "dummy_solver_parameter": [10, 50, 1000]
+      }
+    },
+    "full_rerun": 1
+}

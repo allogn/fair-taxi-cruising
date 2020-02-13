@@ -1,0 +1,55 @@
+{
+    "tag": "default",
+    "data": {
+      "dataset_type": "dummy",
+      "time_periods": 2,
+      "days": 10,
+      "dummy_data_param": 4,
+      "orders_density": 0.1,
+      "number_of_cars": 10,
+      "time_periods_per_hour": 1,
+      "order_sampling_multiplier": 1,
+      "driver_sampling_multiplier": 1
+    },
+    "solver": {
+      "cA2C": {
+        "iterations": 20,
+        "epsilon": 0.5,
+        "gamma": 0.9,
+        "learning_rate": 1e-3,
+        "weight_poorest": 0,
+        "normalize_rewards": [1, 0],
+        "minimum_reward": 1,
+        "batch_size": 2000,
+        "include_income_to_observation": 0,
+        "poorest_first": 1
+      },
+      "Gym": {
+        "num_cpu": 4,
+        "training_iterations": 100000,
+        "weight_poorest": 0,
+        "normalize_rewards": 0,
+        "minimum_reward": 1,
+        "include_income_to_observation": 1,
+        "poorest_first": 1
+      },
+      "RobustGym": {
+        "num_cpu": 20,
+        "training_iterations": 50000,
+        "weight_poorest": 0,
+        "normalize_rewards": 0,
+        "minimum_reward": 0,
+        "include_income_to_observation": [0, 1],
+        "poorest_first": 1
+      },
+      "No": {},
+      "Diff": {},
+      "Oriented": {}
+    },
+    "problem": {
+      "wc": 0.1,
+      "testing_epochs": 15,
+      "count_neighbors": 1
+    },
+    "full_rerun": 1
+}

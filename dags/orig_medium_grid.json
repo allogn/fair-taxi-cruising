@@ -1,0 +1,22 @@
+{
+    "tag": "medium_grid",
+    "data": {
+      "dataset_type": "grid",
+      "n": 10,
+      "time_periods": 144,
+      "days": 4,
+      "orders_density": 0.1,
+      "number_of_cars": 1000,
+      "time_periods_per_hour": 4,
+      "order_distr": "centered"
+    },
+    "solver": {
+      "OrigValIter": {},
+      "OrigNo": {}
+    },
+    "problem": {
+      "wc": 0.5,
+      "train_test_split": 0.5
+    },
+    "full_rerun": 1
+}

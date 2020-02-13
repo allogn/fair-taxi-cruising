@@ -1,0 +1,37 @@
+{
+    "data": {
+      "dataset_type": "chicago",
+      "days": 30,
+      "order_sampling_multiplier": 1
+    },
+    "solver": {
+      "cA2C": {
+        "iterations": 20,
+        "epsilon": 0.5,
+        "gamma": 0.9,
+        "learning_rate": 1e-3,
+        "weight_poorest": 0,
+        "normalize_rewards": 1,
+        "minimum_reward": 0,
+        "batch_size": 3000,
+        "include_income_to_observation": 0,
+        "poorest_first": 1
+      },
+      "Gym": {
+        "num_cpu": 20,
+        "training_iterations": 120000,
+        "weight_poorest": 0,
+        "normalize_rewards": 0,
+        "minimum_reward": 1,
+        "include_income_to_observation": 1,
+        "poorest_first": 1
+      },
+      "No": {},
+      "Diff": {},
+      "Oriented": {}
+    },
+    "problem": {
+      "wc": 0.3
+    },
+    "full_rerun": 0
+}
