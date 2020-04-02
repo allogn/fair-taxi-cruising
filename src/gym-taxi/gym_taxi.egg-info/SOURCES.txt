@@ -1,6 +1,0 @@
-setup.py
-gym_taxi.egg-info/PKG-INFO
-gym_taxi.egg-info/SOURCES.txt
-gym_taxi.egg-info/dependency_links.txt
-gym_taxi.egg-info/requires.txt
-gym_taxi.egg-info/top_level.txt
