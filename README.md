@@ -21,7 +21,7 @@ Experimental framework uses MongoDB for storage of the results.
 Install and set up MongoDB: https://docs.mongodb.com/manual/installation/
 
 ## Install Gym Environement
-Environment is distributed as a separate package. 
+Environment is distributed as a [separate package](https://github.com/allogn/gym-taxi). 
 
 If you want to use it without modification, install from Github by
 ```
