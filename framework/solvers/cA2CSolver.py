@@ -166,8 +166,7 @@ class cA2CSolver(TestingSolver):
                 all_orders = np.sum([n[1]['info'].get_order_num() for n in self.env.world.nodes(data=True)])
 
                 observation, new_reward, done, new_info = self.env.step(new_action)
-                logging.info("Time {}: Total drivers {}, orders {}, orders served {}".format(ii, all_drivers, all_orders, new_info['served_orders']))
-
+                
                 next_state, info, income_mat = self.observation_to_old_fashioned_info(observation, new_info)
                 # immediate_reward = self.stateprocessor.reward_wrapper(info, curr_s) -- outdated, do not count neighbors, env provide averaging inside
                 immediate_reward = new_info['reward_per_node']
@@ -294,7 +293,7 @@ class cA2CSolver(TestingSolver):
 
         :return: an action vector for taxi_gym_batch environment, which is a concatenation of actions per cell
         '''
-        one_action_shape = self.env.itEnv.action_space.shape[0]
+        one_action_shape = self.env.action_space.shape[0]
         action = np.zeros(one_action_shape*len(self.world))
         for n in self.world.nodes():
             action[n*one_action_shape:(n+1)*one_action_shape] = valid_prob[n]
