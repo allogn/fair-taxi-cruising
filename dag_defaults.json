@@ -33,15 +33,6 @@
         "include_income_to_observation": 1,
         "poorest_first": 1
       },
-      "RobustGym": {
-        "num_cpu": 20,
-        "training_iterations": 50000,
-        "weight_poorest": 0,
-        "normalize_rewards": 0,
-        "minimum_reward": 0,
-        "include_income_to_observation": [0, 1],
-        "poorest_first": 1
-      },
       "No": {},
       "Diff": {},
       "Oriented": {}
@@ -51,5 +42,5 @@
       "testing_epochs": 15,
       "count_neighbors": 1
     },
-    "full_rerun": 1
+    "full_rerun": 0
 }

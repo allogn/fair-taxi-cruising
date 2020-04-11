@@ -55,11 +55,16 @@ For automatic setting in Conda, follow [this](https://docs.conda.io/projects/con
 
 # Experimental Framework
 
-Experiments are defined as JSON files in DAGS_PATH directory. An example file `dag_defaults.json` is located in the root of the repository. Ommiting fields results with a substitution with a deafult value from this file.
+Experiments are defined as JSON files in DAGS_PATH directory. An example file `dag_defaults.json` is located in the root of the repository. Ommiting fields results with a substitution with a default value from this file.
 
 Experiments are named by the JSON files. For example, `dummy.json` will produce results tagged as `dummy`.
 
 Run experiments by:
 ```
 python scripts/load_and_rum_experiments.py <name of the experiment>
+```
+
+Monitor experiments by logs in strout and by logs in tensorflow:
+```
+$ tensorflow --logdir $ALLDATA_PATH/generated/<name of experiment>
 ```
