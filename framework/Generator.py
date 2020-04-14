@@ -107,7 +107,7 @@ class Generator:
     def generate_linear(self, n):
         self.G = nx.path_graph(n)
         for n in self.G.nodes():
-            self.G.nodes[n]['coords'] = (n[0], 0)
+            self.G.nodes[n]['coords'] = (n, 0)
         self.assign_weight_by_coords()
         nx.write_gpickle(self.G, os.path.join(self.data_path, "world.pkl"))
         self.generate_dist() # important to generate before orders, so that orders can use dist
