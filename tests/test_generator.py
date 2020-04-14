@@ -8,7 +8,13 @@ class TestGenerator(unittest.TestCase):
 
     def test_star_distribution(self):
         n = 5
-        star_average = Generator.get_random_average_orders("star", 0.5, n*n, n)
+
+        G = nx.grid_2d_graph(n, n)
+        for n in G.nodes():
+            G.nodes[n]['coords'] = (n[0], n[1])
+        G = nx.convert_node_labels_to_integers(G)
+
+        star_average = Generator.get_random_average_orders("star", 0.5, G)
         # 0  1  2  3  4
         # 5  6  7  8  9
         # 10 11 12 13 14
@@ -16,14 +22,22 @@ class TestGenerator(unittest.TestCase):
         # 20 21 22 23 24
         result = np.zeros((25, 25))
         result[0, 12] = 0.5
-        # result[12, 0] = 0.125
         result[4, 12] = 0.5
-        # result[12, 4] = 0.125
         result[20, 12] = 0.5
-        # result[12, 20] = 0.125
         result[24, 12] = 0.5
-        # result[12, 24] = 0.125
-        self.assertTrue(np.array_equal(star_average, result))
+        assert np.array_equal(star_average, result)
+
+    def testLinearDistribution(self):
+        n = 5
+        G = nx.Graph()
+        G.add_edges_from([(0,1),(1,2),(2,3),(3,4)])
+        for n in G.nodes():
+            G.nodes[n]['coords'] = (n, 0)
+        star_average = Generator.get_random_average_orders("star", 0.45, G)
+        result = np.zeros((5, 5))
+        result[0, 2] = 0.45
+        result[4, 2] = 0.45
+        assert np.array_equal(star_average, result)
 
     def testChicagoSampling(self):
         # load original graph
@@ -48,7 +62,7 @@ class TestGenerator(unittest.TestCase):
         gen.generate()
         graph, idle_driver_locations, real_orders, onoff_driver_locations, _, _ = gen.load_complete_set()
         real_orders = np.array(real_orders)
-        exp_size = len(graph_orig) // params['sparsity']
+        exp_size = (len(graph_orig)-1) // params['sparsity'] + 1
         self.assertEqual(idle_driver_locations.shape, (24*60//15, exp_size))
         self.assertEqual(len(graph), exp_size)
         self.assertGreater(np.sum(np.array(real_orders)[:1,:]), 0)

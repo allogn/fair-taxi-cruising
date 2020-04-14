@@ -38,6 +38,7 @@ class Generator:
         self.fm = FileManager(title)
         self.generators = {
             'dummy': lambda: self.generate_dummy(self.params['dummy_data_param']),
+            'linear': lambda: self.generate_linear(self.params['n']),
             'grid': lambda: self.generate_grid(self.params['n']),
             'hexagon': lambda: self.generate_hexagon(self.params['n']),
             'chicago': lambda: self.generate_chicago(self.params.get('sparsity', 1))
@@ -102,6 +103,17 @@ class Generator:
 
     def generate_dummy(self, dummy_data_param):
         return {"dummy_data_param_received": dummy_data_param}
+
+    def generate_linear(self, n):
+        self.G = nx.path_graph(n)
+        for n in self.G.nodes():
+            self.G.nodes[n]['coords'] = (n[0], 0)
+        self.assign_weight_by_coords()
+        nx.write_gpickle(self.G, os.path.join(self.data_path, "world.pkl"))
+        self.generate_dist() # important to generate before orders, so that orders can use dist
+        self.generate_orders()
+        self.generate_drivers()
+        return {}
 
     def generate_grid(self, n):
         self.G = nx.grid_2d_graph(n, n)
@@ -178,7 +190,9 @@ class Generator:
         assert(self.params["time_periods"] % self.params["time_periods_per_hour"] == 0)
 
         for hour in range(hours):
-            r = self.get_random_average_orders(self.params["order_distr"], self.params["orders_density"], len(self.G), self.params.get('n', None))
+            r = self.get_random_average_orders(self.params["order_distr"], 
+                                                self.params["orders_density"], 
+                                                self.G, self.params.get('n', None))
             random_average.append(r)
             expected_demand = np.sum(random_average[-1],axis=1) # summation over destination
 
@@ -204,8 +218,9 @@ class Generator:
             pkl.dump(random_average, f)
 
     @staticmethod
-    def get_random_average_orders(distr_type, density, N, n = None):
+    def get_random_average_orders(distr_type, density, G, n = None):
         random_average = None
+        N = len(G)
 
         if distr_type == "centered":
             assert(n is not None)
@@ -228,9 +243,26 @@ class Generator:
             random_average[N-1,0] = 0
 
         if distr_type == "star":
+            x_lim = (10000000, -1)
+            y_lim = (10000000, -1)
+            for n in G.nodes(data=True):
+                c = n[1]['coords']
+                x_lim = (min(x_lim[0], c[0]), max(x_lim[1], c[0]))
+                y_lim = (min(y_lim[0], c[1]), max(y_lim[1], c[1]))
+
+            center_node_coords = ((x_lim[1] - x_lim[0])//2, (y_lim[1] - y_lim[0])//2)
+            center = None
+            corners = []
+            for n in G.nodes(data=True):
+                c = n[1]['coords']
+                if c == center_node_coords:
+                    center = n[0]
+                if (c[0] in x_lim and c[1] in y_lim) and (n[0] not in corners) and (n[0] != center):
+                    corners.append(n[0])
+            assert center is not None, "No node with coords {}".format(center_node_coords)
+            assert len(corners) > 0, "No corners for x_lim {} and y_lim {}".format(x_lim, y_lim)
+
             random_average = np.zeros((N,N))
-            center = (n-1)//2 + (n-1)*n//2
-            corners = [0, n-1, N-n, N-1]
             for i in corners:
                 random_average[i, center] = 1
             random_average *= density
