@@ -46,7 +46,7 @@ class OrientedSolver(TestingSolver):
         pass
 
     def predict(self, observation, info):
-        action = np.zeros(self.testing_env.action_space.shape)
+        action = np.zeros(self.testing_env.get_action_space_shape())
         wl = len(self.testing_env.world)
         one_cell_action_space = action.shape[0] // wl
 

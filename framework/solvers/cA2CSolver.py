@@ -293,7 +293,7 @@ class cA2CSolver(TestingSolver):
 
         :return: an action vector for taxi_gym_batch environment, which is a concatenation of actions per cell
         '''
-        one_action_shape = self.env.action_space.shape[0]
+        one_action_shape = self.env.get_action_space_shape()[0]
         action = np.zeros(one_action_shape*len(self.world))
         for n in self.world.nodes():
             action[n*one_action_shape:(n+1)*one_action_shape] = valid_prob[n]

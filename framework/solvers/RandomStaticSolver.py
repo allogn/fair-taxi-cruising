@@ -54,6 +54,6 @@ class RandomStaticSolver(TestingSolver):
         pass # refactor eventually
 
     def predict(self, state, info):
-        action = np.ones(self.env.action_space.shape)
+        action = np.ones(self.env.get_action_space_shape())
         action /= action.shape[0]
         return action

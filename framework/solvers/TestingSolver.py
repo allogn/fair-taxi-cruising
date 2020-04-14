@@ -87,7 +87,10 @@ class TestingSolver(Solver):
             idle_reward.append(info['idle_reward'])
             min_idle.append(info['min_idle'])
             it += 1
-        assert it == self.time_periods, (it, self.time_periods)
+        
+        # env can go through several time steps per iteration, not no more than n_interations
+        assert it <= self.time_periods, (it, self.time_periods)
+        
         stats['income_distr'] = [float(d.get_income()) for d in self.testing_env.all_driver_list]
         stats['order_response_rates'] = float(np.mean(order_response_rates))
         stats['order_response_rates_std'] = float(np.std(order_response_rates))

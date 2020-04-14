@@ -10,7 +10,7 @@ class DiffSolver(TestingSolver):
         super().__init__(**params)
 
     def predict(self, observation, info):
-        action = np.ones(self.testing_env.action_space.shape)
+        action = np.ones(self.testing_env.get_action_space_shape())
         action /= action.shape[0]
         return action
 
