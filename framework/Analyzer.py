@@ -6,13 +6,11 @@ import os
 import json
 import warnings
 
-sys.path.append(os.path.dirname(os.path.realpath(__file__)))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..','scripts'))
-import helpers
-from FileManager import *
-from Artist import *
-from ParameterManager import *
-from MongoDatabase import *
+import framework.helpers as helpers
+from framework.FileManager import *
+from framework.Artist import *
+from framework.ParameterManager import *
+from framework.MongoDatabase import *
 
 class Analyzer:
     def __init__(self, tag):
@@ -24,7 +22,6 @@ class Analyzer:
 
     def load_dataframe(self):
         q = {"tag": self.tag, "mode": "Test"}
-        satgreedy_exists = False
         for solver_result in self.db.solution.find(q):
             row = solver_result
 

@@ -6,6 +6,10 @@ class NoSolver(TestingSolver):
         super().__init__(**params)
 
     def train(self):
+        # do testing instead of training, so that we have some stats to compare right away
+        self.run_tests()
+
+    def test(self):
         pass
 
     def load(self):

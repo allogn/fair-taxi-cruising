@@ -2,6 +2,8 @@ import time
 import json
 import uuid
 
+from framework.ParameterManager import ParameterManager
+
 class Solver:
     def __init__(self, **params):
         self.log = params
@@ -16,10 +18,15 @@ class Solver:
         
     def reset(self):
         raise NotImplementedError()
-        pass
 
     def get_name(self):
         return self.__class__.__name__
+
+    def get_footprint_params(self):
+        return {}
+
+    def get_solver_signature(self):
+        return self.get_name() + ParameterManager.get_param_footprint(self.get_footprint_params())
 
     def run(self):
         if "mode" not in self.params:

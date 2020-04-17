@@ -10,9 +10,7 @@ import logging
 import os
 import json
 import numpy as np
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..','src'))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),'..','scripts'))
-import helpers
+import framework.helpers as helpers
 
 # sns.set(rc={'figure.figsize':(4,3)}, style="whitegrid", font_scale=1.4)
 # SMALL_SIZE = 18

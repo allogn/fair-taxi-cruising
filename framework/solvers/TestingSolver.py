@@ -2,6 +2,7 @@ import os, sys
 import pickle as pkl
 from framework.solvers.Solver import Solver
 from framework.Generator import Generator
+from framework.FileManager import FileManager
 import gym
 from tqdm import tqdm
 import time
@@ -9,6 +10,8 @@ import uuid
 import numpy as np
 import logging
 import imageio
+import tensorflow as tf
+from collections.abc import Iterable
 
 class TestingSolver(Solver):
     def __init__(self, **params):
@@ -17,6 +20,11 @@ class TestingSolver(Solver):
         self.days = self.params['dataset']["days"]
         self.load_dataset()
         self.init_gym()
+
+        # tf logging
+        self.fm = FileManager(self.params['tag'])
+        train_log_dir = os.path.join(self.fm.get_data_path(),self.get_solver_signature())
+        self.train_summary_writer = tf.summary.create_file_writer(train_log_dir)
 
     def init_gym(self):
         env_params = {
@@ -52,16 +60,17 @@ class TestingSolver(Solver):
         self.world, self.idle_driver_locations, self.real_orders, \
             self.onoff_driver_locations, random_average, dist = gen.load_complete_set(dataset_id=self.params['dataset']['dataset_id'])
 
-    def do_test_iteration(self, draw=False):
+    def run_test_episode(self, draw=False):
         stats = {}
         t = time.time()
         randseed = np.random.randint(1,100000)
-        stats['seed'] = randseed
+        stats['seed'] = float(randseed)
         self.testing_env.seed(randseed)
         state = self.testing_env.reset()
         info = self.testing_env.get_reset_info()
         rewards = []
         min_income = []
+        total_income = []
         idle_reward = []
         min_idle = []
         done = False
@@ -85,27 +94,45 @@ class TestingSolver(Solver):
             min_income.append(self.testing_env.get_min_revenue())
             rewards.append(reward)
             idle_reward.append(info['idle_reward'])
-            min_idle.append(info['min_idle'])
+            min_idle.append(float(info['min_idle']))
             it += 1
         
         # env can go through several time steps per iteration, not no more than n_interations
         assert it <= self.time_periods, (it, self.time_periods)
         
-        stats['income_distr'] = [float(d.get_income()) for d in self.testing_env.all_driver_list]
-        stats['order_response_rates'] = float(np.mean(order_response_rates))
-        stats['order_response_rates_std'] = float(np.std(order_response_rates))
-        stats['nodes_with_drivers'] = float(np.mean(nodes_with_drivers))
-        stats['nodes_with_orders'] = float(np.mean(nodes_with_orders))
-        stats['nodes_with_drivers_std'] = float(np.std(nodes_with_drivers))
-        stats['nodes_with_orders_std'] = float(np.std(nodes_with_orders))
+        stats['order_response_rates'] = order_response_rates
+        stats['nodes_with_drivers'] = nodes_with_drivers
+        stats['nodes_with_orders'] = nodes_with_orders
         stats['min_income'] = float(min_income[-1])
-        stats['rewards'] = float(np.sum(rewards))
-        stats['min_idle'] = float(min_idle[-1])
+        stats['rewards'] = rewards
+        stats['min_idle'] = min_idle
         stats['idle_reward'] = float(np.mean(idle_reward))
-        stats['testing_iteration_time'] = time.time() - t
+        stats['testing_iteration_time'] = float(time.time() - t)
         return stats, images
 
+    def save_tf_summary(self, episode, stats):
+        desc = {
+            "min_idle": "Minimal non-idle periods per iteration among drivers,\
+                            averaged over drivers per iteration"
+        }
+        with tf.name_scope("stats") as scope:
+            with self.train_summary_writer.as_default():
+                for k, val in stats.items():
+                    if isinstance(val, Iterable):
+                        tf.summary.histogram(
+                            k, val, step=episode, buckets=None, description=desc.get(k, None)
+                        )
+                        tf.summary.scalar(k + "_mean", np.mean(val), step=episode, description=desc.get(k, None))
+                        tf.summary.scalar(k + "_std", np.std(val), step=episode, description=desc.get(k, None))
+                    else:
+                        assert type(val) == float
+                        assert type(k) == str
+                        tf.summary.scalar(k, val, step=episode, description=desc.get(k, None))
+
     def test(self):
+        self.run_tests() # some solvers run tests during training stage
+
+    def run_tests(self):
         t1 = time.time()
         self.log['seeds'] = []
         total_reward_per_epoch = []
@@ -117,16 +144,16 @@ class TestingSolver(Solver):
 
         if self.verbose:
             pbar = tqdm(total=total_test_days, desc="Testing Solver")
-        for day in range(total_test_days):
-            stats, images = self.do_test_iteration(draw = False)
+        for day in range(total_test_days): # number of episodes
+            stats, images = self.run_test_episode(draw = False)
+            self.save_tf_summary(day, stats)
             # need to rereun all experiments in server to plot because current ones
             # are done with graph with missing coordinates
 
             total_min_reward_per_epoch.append(stats['min_income'])
             total_reward_per_epoch.append(np.sum(stats['rewards']))
-            total_min_idle_per_epoch.append(stats['min_idle'])
+            total_min_idle_per_epoch.append(stats['min_idle'][-1])
             total_idle_per_epoch.append(np.mean(stats['idle_reward']))
-            self.log.update(stats)
             if self.verbose:
                 pbar.update()
 

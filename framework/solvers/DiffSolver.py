@@ -2,8 +2,8 @@ import os, sys
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 
 from collections import Counter
-
-from TestingSolver import *
+import numpy as np
+from framework.solvers.TestingSolver import TestingSolver
 
 class DiffSolver(TestingSolver):
     def __init__(self, **params):
@@ -14,8 +14,11 @@ class DiffSolver(TestingSolver):
         action /= action.shape[0]
         return action
 
-    def train(self):
+    def test(self):
         pass
+
+    def train(self):
+        self.run_tests()
 
     def load(self):
         pass

@@ -31,7 +31,7 @@ class cA2CSolver(TestingSolver):
         self.time_periods = self.params['dataset']["time_periods"]
         self.log_dir = self.dpath
         self.load_dataset()
-        self.solver_signature = "cA2C_" + ParameterManager.get_param_footprint(self.get_footprint_params())
+        self.solver_signature = self.get_solver_signature()
         self.init_env()
         self.init()
         self.log['init_time'] = time.time() - t1
