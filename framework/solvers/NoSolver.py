@@ -7,7 +7,7 @@ class NoSolver(TestingSolver):
 
     def train(self):
         # do testing instead of training, so that we have some stats to compare right away
-        self.run_tests()
+        self.run_tests(draw = True)
 
     def test(self):
         pass

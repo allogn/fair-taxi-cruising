@@ -26,7 +26,7 @@ from framework.solvers.LinearSolver import *
 from framework.solvers.OrigNoSolver import *
 from framework.solvers.OrigValIterSolver import *
 from framework.solvers.OrigA2CSolver import *
-#from framework.solvers.GymSolver import *
+from framework.solvers.GymSolver import *
 #from framework.solvers.RobustGymSolver import *
 #from framework.solvers.OrientedSolver import *
 

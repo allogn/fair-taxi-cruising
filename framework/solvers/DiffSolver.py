@@ -18,7 +18,7 @@ class DiffSolver(TestingSolver):
         pass
 
     def train(self):
-        self.run_tests()
+        self.run_tests(draw = True)
 
     def load(self):
         pass

@@ -3,6 +3,7 @@ import pickle as pkl
 from framework.solvers.Solver import Solver
 from framework.Generator import Generator
 from framework.FileManager import FileManager
+from framework.Artist import Artist
 import gym
 from tqdm import tqdm
 import time
@@ -10,8 +11,10 @@ import uuid
 import numpy as np
 import logging
 import imageio
+import io
 import tensorflow as tf
 from collections.abc import Iterable
+import matplotlib.pyplot as plt
 
 class TestingSolver(Solver):
     def __init__(self, **params):
@@ -22,9 +25,12 @@ class TestingSolver(Solver):
         self.init_gym()
 
         # tf logging
+        self.artist = Artist()
         self.fm = FileManager(self.params['tag'])
         train_log_dir = os.path.join(self.fm.get_data_path(),self.get_solver_signature())
-        self.train_summary_writer = tf.summary.create_file_writer(train_log_dir)
+        
+        self.sess = tf.Session()
+        self.summary_writer = tf.summary.FileWriter(train_log_dir)
 
     def init_gym(self):
         env_params = {
@@ -78,15 +84,14 @@ class TestingSolver(Solver):
         order_response_rates = []
         nodes_with_drivers = []
         nodes_with_orders = []
-
         images = []
 
         while not done:
             action = self.predict(state, info)
             state, reward, done, info = self.testing_env.step(action)
 
-            if draw and it == 1:
-                images.append(self.testing_env.render(mode="rgb_array"))
+            if draw:
+                images.append(self.testing_env.render())
 
             order_response_rates.append(float(info['served_orders']/(info['total_orders']+0.0001)))
             nodes_with_drivers.append(int(info['nodes_with_drivers']))
@@ -96,6 +101,10 @@ class TestingSolver(Solver):
             idle_reward.append(info['idle_reward'])
             min_idle.append(float(info['min_idle']))
             it += 1
+        
+        # take only subset of images
+        # we don't know how many of them in total, so we render all
+        images = [images[i] for i in range(0,len(images),len(images)//5)]
         
         # env can go through several time steps per iteration, not no more than n_interations
         assert it <= self.time_periods, (it, self.time_periods)
@@ -108,31 +117,52 @@ class TestingSolver(Solver):
         stats['min_idle'] = min_idle
         stats['idle_reward'] = float(np.mean(idle_reward))
         stats['testing_iteration_time'] = float(time.time() - t)
-        return stats, images
 
-    def save_tf_summary(self, episode, stats):
-        desc = {
-            "min_idle": "Minimal non-idle periods per iteration among drivers,\
-                            averaged over drivers per iteration"
-        }
-        with tf.name_scope("stats") as scope:
-            with self.train_summary_writer.as_default():
-                for k, val in stats.items():
-                    if isinstance(val, Iterable):
-                        tf.summary.histogram(
-                            k, val, step=episode, buckets=None, description=desc.get(k, None)
-                        )
-                        tf.summary.scalar(k + "_mean", np.mean(val), step=episode, description=desc.get(k, None))
-                        tf.summary.scalar(k + "_std", np.std(val), step=episode, description=desc.get(k, None))
-                    else:
-                        assert type(val) == float
-                        assert type(k) == str
-                        tf.summary.scalar(k, val, step=episode, description=desc.get(k, None))
+        figure = self.artist.combine_drawings(images)
+
+        return stats, figure
+
+    def plot_to_image(self, figure):
+        """Converts the matplotlib plot specified by 'figure' to a PNG image and
+        returns it. The supplied figure is closed and inaccessible after this call."""
+        # Save the plot to a PNG in memory.
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png')
+        # Closing the figure prevents it from being displayed directly inside
+        # the notebook.
+        plt.close(figure)
+        buf.seek(0)
+        # Convert PNG buffer to TF image
+        image = tf.image.decode_png(buf.getvalue(), channels=4)
+        # Add the batch dimension
+        image = tf.expand_dims(image, 0)
+        return image
+
+
+    def save_tf_summary(self, episode, stats, figure):
+        summaries = []
+        for k, val in stats.items():
+            if isinstance(val, Iterable):
+                summaries += [
+                    tf.summary.histogram(k, val),
+                    tf.summary.scalar(k + "_mean", np.mean(val), family="stats"),
+                    tf.summary.scalar(k + "_std", np.std(val), family="stats")
+                ]
+            else:
+                assert type(val) == float
+                assert type(k) == str
+                summaries.append(tf.summary.scalar(k, val, family="stats"))
+        
+        summaries.append(tf.summary.image("Training data", self.plot_to_image(figure), family="stats"))
+        summaries = tf.summary.merge(summaries)
+        summary = self.sess.run(summaries)
+        self.summary_writer.add_summary(summary, episode)
+        self.summary_writer.flush()
 
     def test(self):
         self.run_tests() # some solvers run tests during training stage
 
-    def run_tests(self):
+    def run_tests(self, draw = False):
         t1 = time.time()
         self.log['seeds'] = []
         total_reward_per_epoch = []
@@ -145,8 +175,8 @@ class TestingSolver(Solver):
         if self.verbose:
             pbar = tqdm(total=total_test_days, desc="Testing Solver")
         for day in range(total_test_days): # number of episodes
-            stats, images = self.run_test_episode(draw = False)
-            self.save_tf_summary(day, stats)
+            stats, figure = self.run_test_episode(draw)
+            self.save_tf_summary(day, stats, figure)
             # need to rereun all experiments in server to plot because current ones
             # are done with graph with missing coordinates
 
@@ -174,9 +204,9 @@ class TestingSolver(Solver):
 
         logging.info("Testing finished with total obj {}, min obj {}".format(self.log['test_total_reward_per_epoch'], self.log['test_total_min_reward_per_epoch']))
 
-        if len(images) > 0:
-            imageio.mimwrite(os.path.join(self.dpath, 'taxi_env.gif'),
-                                [np.array(img) for i, img in enumerate(images)], format="GIF-PIL", fps=5)
+        # if len(images) > 0:
+        #     imageio.mimwrite(os.path.join(self.dpath, 'taxi_env.gif'),
+        #                         [np.array(img) for i, img in enumerate(images)], format="GIF-PIL", fps=5)
 
     def predict(self, state, info):
         raise NotImplementedError()

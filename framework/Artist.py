@@ -180,3 +180,14 @@ class Artist():
         ax.set_ylabel(y_label)
         ax.set_title(title)
         self.save_figure(fig, prefix, title, output_path)
+
+    def combine_drawings(self, images):
+        """Return a 5x5 grid of the MNIST images as a matplotlib figure."""
+        # Create a figure to contain the plot.
+        figure = plt.figure(figsize=(3*len(images),3),dpi=200)
+        plt.xticks([])
+        plt.yticks([])
+        plt.grid(False)
+        concat = np.concatenate(images, axis=1)
+        plt.imshow(concat)
+        return figure
