@@ -28,9 +28,14 @@ class TestingSolver(Solver):
         self.artist = Artist()
         self.fm = FileManager(self.params['tag'])
         train_log_dir = os.path.join(self.fm.get_data_path(),self.get_solver_signature())
-        
+        tf.reset_default_graph()  # important! logging works weirdly otherwise, creates separate plots per iteration
+        # also important to reset before session, not after
+
         self.sess = tf.Session()
         self.summary_writer = tf.summary.FileWriter(train_log_dir)
+        self.epoch_stats = {}
+        self.summaries = None
+        
 
     def init_gym(self):
         env_params = {
@@ -140,24 +145,35 @@ class TestingSolver(Solver):
 
 
     def save_tf_summary(self, episode, stats, figure):
-        summaries = []
+        assert len(stats) > 0 
         for k, val in stats.items():
             if isinstance(val, Iterable):
-                summaries += [
-                    tf.summary.histogram(k, val),
-                    tf.summary.scalar(k + "_mean", np.mean(val), family="stats"),
-                    tf.summary.scalar(k + "_std", np.std(val), family="stats")
-                ]
+                self.epoch_stats[k] = val
+                self.epoch_stats[k + "_mean"] = float(np.mean(val))
+                self.epoch_stats[k + "_std"] = float(np.std(val))
             else:
                 assert type(val) == float
                 assert type(k) == str
-                summaries.append(tf.summary.scalar(k, val, family="stats"))
-        
-        summaries.append(tf.summary.image("Training data", self.plot_to_image(figure), family="stats"))
-        summaries = tf.summary.merge(summaries)
-        summary = self.sess.run(summaries)
-        self.summary_writer.add_summary(summary, episode)
-        self.summary_writer.flush()
+                self.epoch_stats[k] = val
+            self.epoch_stats["visual"] = self.plot_to_image(figure)
+        with tf.name_scope('stats'):
+            if self.summaries is None:
+                summaries = []
+                for k, val in self.epoch_stats.items():
+                    if k == 'visual':
+                        summaries.append(tf.summary.image(k, self.epoch_stats[k]))
+                        continue
+                    if isinstance(val, Iterable):
+                        summaries.append(tf.summary.histogram(k, self.epoch_stats[k]))
+                    else:
+                        assert type(val) == float
+                        assert type(k) == str
+                        summaries.append(tf.summary.scalar(k, self.epoch_stats[k]))
+                self.summaries = tf.summary.merge(summaries)
+            
+            summary = self.sess.run(self.summaries)
+            self.summary_writer.add_summary(summary, episode)
+            self.summary_writer.flush()
 
     def test(self):
         self.run_tests() # some solvers run tests during training stage
@@ -174,6 +190,7 @@ class TestingSolver(Solver):
 
         if self.verbose:
             pbar = tqdm(total=total_test_days, desc="Testing Solver")
+
         for day in range(total_test_days): # number of episodes
             stats, figure = self.run_test_episode(draw)
             self.save_tf_summary(day, stats, figure)

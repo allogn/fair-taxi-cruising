@@ -31,7 +31,8 @@
         "normalize_rewards": 0,
         "minimum_reward": 1,
         "include_income_to_observation": 1,
-        "poorest_first": 1
+        "poorest_first": 1,
+        "callback": 1
       },
       "No": {},
       "Diff": {},

@@ -127,8 +127,8 @@ class GymSolver(TestingSolver):
         def callback(_locals, _globals):
             global call
             if call % 4 == 0:
-                stats = self.do_test_iteration()
-                self.log['iterations_stats'][str(len(self.log['iterations_stats']))] = stats
+                stats = self.run_test_episode(draw=True)
+            self.log['iterations_stats'][str(len(self.log['iterations_stats']))] = stats
             call += 1
             return True
 
