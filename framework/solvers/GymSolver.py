@@ -128,7 +128,7 @@ class GymSolver(TestingSolver):
             return True
 
         if self.params.get("callback", 0) == 1:
-            return [TensorboardCallback(),TestingCallback(self, verbose=1, eval_freq=100, draw=True)]
+            return [TensorboardCallback(),TestingCallback(self, verbose=1, eval_freq=1000, draw=True)]
         else:
             return no_callback
 

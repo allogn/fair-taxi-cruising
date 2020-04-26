@@ -33,7 +33,7 @@ class TestingSolver(Solver):
         # # also important to reset before session, not after
 
         # self.sess = tf.Session()
-        # self.test_tf_writer = tf.summary.FileWriter(self.log_dir)
+        self.test_tf_writer = tf.summary.FileWriter(self.log_dir)
         # self.epoch_stats = {}
         # self.summaries = None
         
@@ -72,7 +72,7 @@ class TestingSolver(Solver):
         self.world, self.idle_driver_locations, self.real_orders, \
             self.onoff_driver_locations, random_average, dist = gen.load_complete_set(dataset_id=self.params['dataset']['dataset_id'])
 
-    def run_test_episode(self, draw=False):
+    def run_test_episode(self, training_iter, draw=False):
         stats = {}
         t = time.time()
         randseed = np.random.randint(1,100000)
@@ -88,11 +88,12 @@ class TestingSolver(Solver):
             state, reward, done, info = self.test_env.step(action)
             if draw:
                 fig = self.test_env.render('fig')
-                fig.savefig(self.log_dir + "/" + str(i) + "_fig.png", dpi=None, facecolor='w', edgecolor='w',
+                fig_dir = os.path.join(self.log_dir, str(training_iter))
+                self.fm.create_path(fig_dir)
+                fig.savefig(os.path.join(fig_dir, str(i) + "_fig.png"), dpi=None, facecolor='w', edgecolor='w',
                     orientation='portrait', papertype=None, format=None,
                     transparent=False, bbox_inches=None, pad_inches=0.1,
                     frameon=None, metadata=None)
-                # plt.savefig()
             i += 1
         
         stats.update(self.test_env.get_episode_info())
@@ -118,13 +119,16 @@ class TestingSolver(Solver):
     def test(self):
         self.run_tests() # some solvers run tests during training stage
 
-    def run_tests(self, draw = False, verbose = 1):
+    def run_tests(self, training_iteration, draw = False, verbose = 1):
         t1 = time.time()
         self.log['seeds'] = []
-        total_reward_per_epoch = []
-        total_min_reward_per_epoch = []
-        total_min_idle_per_epoch = []
-        total_idle_per_epoch = []
+
+        test_stats = {
+            "total_reward_per_epoch": [],
+            "total_min_reward_per_epoch": [],
+            "total_min_idle_per_epoch": [],
+            "total_idle_per_epoch": [],
+        }
 
         total_test_days = self.params['testing_epochs']
 
@@ -132,34 +136,27 @@ class TestingSolver(Solver):
             pbar = tqdm(total=total_test_days, desc="Testing Solver")
 
         for day in range(total_test_days): # number of episodes
-            stats = self.run_test_episode(draw and day == 0) # plot first iteration only
+            stats = self.run_test_episode(training_iteration, draw and day == 0) # plot first iteration only
             # need to rereun all experiments in server to plot because current ones
             # are done with graph with missing coordinates
 
-            total_min_reward_per_epoch.append(stats['min_income'][-1])
-            total_reward_per_epoch.append(np.sum(stats['rewards']))
-            total_min_idle_per_epoch.append(stats['min_idle'][-1])
-            total_idle_per_epoch.append(np.mean(stats['idle_reward']))
+            test_stats["total_min_reward_per_epoch"].append(stats['min_income'][-1])
+            test_stats["total_reward_per_epoch"].append(np.sum(stats['rewards']))
+            test_stats["total_min_idle_per_epoch"].append(stats['min_idle'][-1])
+            test_stats["total_idle_per_epoch"].append(np.mean(stats['idle_reward']))
             if verbose:
                 pbar.update()
 
         if verbose:
             pbar.close()
 
-        self.log['test_total_min_reward_per_epoch'] = float(np.mean(total_min_reward_per_epoch))
-        self.log['test_total_reward_per_epoch'] = float(np.mean(total_reward_per_epoch))
-        self.log['test_total_min_reward_per_epoch_std'] = float(np.std(total_min_reward_per_epoch))
-        self.log['test_total_reward_per_epoch_std'] = float(np.std(total_reward_per_epoch))
-
-        self.log['test_total_min_idle_per_epoch_std'] = float(np.std(total_min_idle_per_epoch))
-        self.log['test_total_idle_per_epoch_std'] = float(np.std(total_idle_per_epoch))
-        self.log['test_total_min_idle_per_epoch'] = float(np.mean(total_min_idle_per_epoch))
-        self.log['test_total_idle_per_epoch'] = float(np.mean(total_idle_per_epoch))
-
+        values = []
+        for k, val in test_stats.items():
+            values.append(tf.Summary.Value(tag="test_stats/" + k + '_mean', simple_value=float(np.mean(val))))
+            values.append(tf.Summary.Value(tag="test_stats/" + k + '_std', simple_value=float(np.std(val))))
+        summary = tf.Summary(value=values)
+        self.test_tf_writer.add_summary(summary, training_iteration)
         self.log['test_test_time'] = time.time() - t1
-
-        logging.info("Testing finished in {}s with avg_reward {}, min_income {}".format(time.time()-t1, 
-                    self.log['test_total_reward_per_epoch'], self.log['test_total_min_reward_per_epoch']))
 
     def predict(self, state, info):
         raise NotImplementedError()
