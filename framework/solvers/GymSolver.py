@@ -17,8 +17,7 @@ from framework.Generator import Generator
 from framework.FileManager import FileManager
 from framework.solvers.cA2C.oenvs import CityReal
 from framework.ParameterManager import ParameterManager
-
-call = 0
+from framework.solvers.callbacks import TensorboardCallback, TestingCallback
 
 class GymSolver(TestingSolver):
     def __init__(self, **params):
@@ -46,11 +45,15 @@ class GymSolver(TestingSolver):
         self.train_env = SubprocVecEnv([self.make_env(env_id, i, seed+i, self.env_params) for i in range(num_cpu)])
 
         self.train_env = VecNormalize(self.train_env, norm_obs=False, norm_reward=False)
+        self.test_env_native = SubprocVecEnv([self.make_env(env_id, num_cpu+1, seed+num_cpu+1, self.env_params)])
+        self.test_env_native = VecNormalize(self.test_env_native, norm_obs=False, norm_reward=False)
 
         # self.model = self.Model(Policy, self.train_env, verbose=0, nminibatches=nminibatches, tensorboard_log=os.path.join(self.dpath,self.solver_signature))
                                 # minibatches are important, and no parallelism
                                 #n_steps=self.params['dataset']['time_periods']+1,
-        self.model = self.Model(Policy, self.train_env, verbose=0, nminibatches=4, tensorboard_log=os.path.join(self.dpath,self.solver_signature), n_steps=self.params['dataset']['time_periods']+1)
+        self.model = self.Model(Policy, self.train_env, verbose=0, nminibatches=4, 
+                                tensorboard_log=os.path.join(self.dpath,self.solver_signature), 
+                                n_steps=self.params['dataset']['time_periods']+1)
 
     def get_footprint_params(self):
         footprint_params = {
@@ -121,28 +124,16 @@ class GymSolver(TestingSolver):
         :param _locals: (dict)
         :param _globals: (dict)
         """
-        global call
-        call = 0
-        self.log['iterations_stats'] = {}
-        def callback(_locals, _globals):
-            global call
-            if call % 4 == 0:
-                stats = self.run_test_episode(draw=True)
-            self.log['iterations_stats'][str(len(self.log['iterations_stats']))] = stats
-            call += 1
-            return True
-
         def no_callback(_locals, _globals):
             return True
 
         if self.params.get("callback", 0) == 1:
-            return callback
+            return [TensorboardCallback(),TestingCallback(self, verbose=1, eval_freq=100, draw=True)]
         else:
             return no_callback
 
     def train(self):
         t = time.time()
-        _ = self.get_callback()
         self.model.learn(total_timesteps=self.params['training_iterations'], callback=self.get_callback())
         self.log['training_time'] = time.time() - t
 
@@ -154,7 +145,7 @@ class GymSolver(TestingSolver):
             onehot_nodeid = np.zeros(len(self.world))
             onehot_nodeid[n] = 1
             if self.params['include_income_to_observation'] == 1:
-                assert self.testing_env.include_income_to_observation
+                assert self.test_env.include_income_to_observation
                 positions_for_income = 3*len(self.world)
                 assert state[:-positions_for_income].shape == ((2*len(self.world)+self.time_periods),)
                 assert state[-positions_for_income:].shape[0] == positions_for_income
@@ -166,7 +157,7 @@ class GymSolver(TestingSolver):
                 obs = np.concatenate((state[:-positions_for_income], onehot_nodeid, last))
                 assert obs.shape[0] == 3*len(self.world)+self.time_periods+3
             else:
-                assert not self.testing_env.include_income_to_observation
+                assert not self.test_env.include_income_to_observation
                 assert state.shape == (2*len(self.world)+self.time_periods,), (state.shape, (2*len(self.world)+self.time_periods,))
                 obs = np.concatenate((state, onehot_nodeid))
                 assert obs.shape[0] == 3*len(self.world)+self.time_periods

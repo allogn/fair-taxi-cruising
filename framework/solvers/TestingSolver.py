@@ -25,16 +25,17 @@ class TestingSolver(Solver):
         self.init_gym()
 
         # tf logging
-        self.artist = Artist()
+        # self.artist = Artist()
         self.fm = FileManager(self.params['tag'])
-        train_log_dir = os.path.join(self.fm.get_data_path(),self.get_solver_signature())
-        tf.reset_default_graph()  # important! logging works weirdly otherwise, creates separate plots per iteration
-        # also important to reset before session, not after
+        self.log_dir = os.path.join(self.fm.get_data_path(),self.get_solver_signature())
+        self.fm.create_path(self.log_dir)
+        # tf.reset_default_graph()  # important! logging works weirdly otherwise, creates separate plots per iteration
+        # # also important to reset before session, not after
 
-        self.sess = tf.Session()
-        self.summary_writer = tf.summary.FileWriter(train_log_dir)
-        self.epoch_stats = {}
-        self.summaries = None
+        # self.sess = tf.Session()
+        # self.test_tf_writer = tf.summary.FileWriter(self.log_dir)
+        # self.epoch_stats = {}
+        # self.summaries = None
         
 
     def init_gym(self):
@@ -59,7 +60,7 @@ class TestingSolver(Solver):
             entry_point='gym_taxi.envs:TaxiEnvBatch',
             kwargs=env_params
         )
-        self.testing_env = gym.make(env_id)
+        self.test_env = gym.make(env_id)
 
     def load_dataset(self):
         '''
@@ -76,56 +77,27 @@ class TestingSolver(Solver):
         t = time.time()
         randseed = np.random.randint(1,100000)
         stats['seed'] = float(randseed)
-        self.testing_env.seed(randseed)
-        state = self.testing_env.reset()
-        info = self.testing_env.get_reset_info()
-        rewards = []
-        min_income = []
-        total_income = []
-        idle_reward = []
-        min_idle = []
+        self.test_env.seed(randseed)
+        state = self.test_env.reset()
+        info = self.test_env.get_reset_info()
         done = False
-        it = 0
-        order_response_rates = []
-        nodes_with_drivers = []
-        nodes_with_orders = []
-        images = []
 
+        i = 0
         while not done:
             action = self.predict(state, info)
-            state, reward, done, info = self.testing_env.step(action)
-
+            state, reward, done, info = self.test_env.step(action)
             if draw:
-                images.append(self.testing_env.render())
-
-            order_response_rates.append(float(info['served_orders']/(info['total_orders']+0.0001)))
-            nodes_with_drivers.append(int(info['nodes_with_drivers']))
-            nodes_with_orders.append(int(info['nodes_with_orders']))
-            min_income.append(self.testing_env.get_min_revenue())
-            rewards.append(reward)
-            idle_reward.append(info['idle_reward'])
-            min_idle.append(float(info['min_idle']))
-            it += 1
+                fig = self.test_env.render('fig')
+                fig.savefig(self.log_dir + "/" + str(i) + "_fig.png", dpi=None, facecolor='w', edgecolor='w',
+                    orientation='portrait', papertype=None, format=None,
+                    transparent=False, bbox_inches=None, pad_inches=0.1,
+                    frameon=None, metadata=None)
+                # plt.savefig()
+            i += 1
         
-        # take only subset of images
-        # we don't know how many of them in total, so we render all
-        images = [images[i] for i in range(0,len(images),len(images)//5)]
-        
-        # env can go through several time steps per iteration, not no more than n_interations
-        assert it <= self.time_periods, (it, self.time_periods)
-        
-        stats['order_response_rates'] = order_response_rates
-        stats['nodes_with_drivers'] = nodes_with_drivers
-        stats['nodes_with_orders'] = nodes_with_orders
-        stats['min_income'] = float(min_income[-1])
-        stats['rewards'] = rewards
-        stats['min_idle'] = min_idle
-        stats['idle_reward'] = float(np.mean(idle_reward))
-        stats['testing_iteration_time'] = float(time.time() - t)
-
-        figure = self.artist.combine_drawings(images)
-
-        return stats, figure
+        stats.update(self.test_env.get_episode_info())
+        stats['test_episode_runtime'] = time.time() - t
+        return stats
 
     def plot_to_image(self, figure):
         """Converts the matplotlib plot specified by 'figure' to a PNG image and
@@ -143,42 +115,10 @@ class TestingSolver(Solver):
         image = tf.expand_dims(image, 0)
         return image
 
-
-    def save_tf_summary(self, episode, stats, figure):
-        assert len(stats) > 0 
-        for k, val in stats.items():
-            if isinstance(val, Iterable):
-                self.epoch_stats[k] = val
-                self.epoch_stats[k + "_mean"] = float(np.mean(val))
-                self.epoch_stats[k + "_std"] = float(np.std(val))
-            else:
-                assert type(val) == float
-                assert type(k) == str
-                self.epoch_stats[k] = val
-            self.epoch_stats["visual"] = self.plot_to_image(figure)
-        with tf.name_scope('stats'):
-            if self.summaries is None:
-                summaries = []
-                for k, val in self.epoch_stats.items():
-                    if k == 'visual':
-                        summaries.append(tf.summary.image(k, self.epoch_stats[k]))
-                        continue
-                    if isinstance(val, Iterable):
-                        summaries.append(tf.summary.histogram(k, self.epoch_stats[k]))
-                    else:
-                        assert type(val) == float
-                        assert type(k) == str
-                        summaries.append(tf.summary.scalar(k, self.epoch_stats[k]))
-                self.summaries = tf.summary.merge(summaries)
-            
-            summary = self.sess.run(self.summaries)
-            self.summary_writer.add_summary(summary, episode)
-            self.summary_writer.flush()
-
     def test(self):
         self.run_tests() # some solvers run tests during training stage
 
-    def run_tests(self, draw = False):
+    def run_tests(self, draw = False, verbose = 1):
         t1 = time.time()
         self.log['seeds'] = []
         total_reward_per_epoch = []
@@ -188,23 +128,22 @@ class TestingSolver(Solver):
 
         total_test_days = self.params['testing_epochs']
 
-        if self.verbose:
+        if verbose:
             pbar = tqdm(total=total_test_days, desc="Testing Solver")
 
         for day in range(total_test_days): # number of episodes
-            stats, figure = self.run_test_episode(draw)
-            self.save_tf_summary(day, stats, figure)
+            stats = self.run_test_episode(draw and day == 0) # plot first iteration only
             # need to rereun all experiments in server to plot because current ones
             # are done with graph with missing coordinates
 
-            total_min_reward_per_epoch.append(stats['min_income'])
+            total_min_reward_per_epoch.append(stats['min_income'][-1])
             total_reward_per_epoch.append(np.sum(stats['rewards']))
             total_min_idle_per_epoch.append(stats['min_idle'][-1])
             total_idle_per_epoch.append(np.mean(stats['idle_reward']))
-            if self.verbose:
+            if verbose:
                 pbar.update()
 
-        if self.verbose:
+        if verbose:
             pbar.close()
 
         self.log['test_total_min_reward_per_epoch'] = float(np.mean(total_min_reward_per_epoch))
@@ -219,11 +158,8 @@ class TestingSolver(Solver):
 
         self.log['test_test_time'] = time.time() - t1
 
-        logging.info("Testing finished with total obj {}, min obj {}".format(self.log['test_total_reward_per_epoch'], self.log['test_total_min_reward_per_epoch']))
-
-        # if len(images) > 0:
-        #     imageio.mimwrite(os.path.join(self.dpath, 'taxi_env.gif'),
-        #                         [np.array(img) for i, img in enumerate(images)], format="GIF-PIL", fps=5)
+        logging.info("Testing finished in {}s with avg_reward {}, min_income {}".format(time.time()-t1, 
+                    self.log['test_total_reward_per_epoch'], self.log['test_total_min_reward_per_epoch']))
 
     def predict(self, state, info):
         raise NotImplementedError()
