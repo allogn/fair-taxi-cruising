@@ -204,7 +204,6 @@ class Estimator:
                 curr_action_indices[kk] += 1
 
             start_node_id = grid_valid_idx
-            # print(curr_action_indices)
             for curr_action_idx, num_driver in enumerate(curr_action_indices):
                 if num_driver > 0:
                     assert self.valid_action_mask[grid_valid_idx, curr_action_idx] == 1
@@ -214,8 +213,6 @@ class Estimator:
                     end_node_id = int(self.valid_neighbor_node_id[grid_valid_idx, curr_action_idx])
                     if end_node_id != start_node_id:
                         action_tuple.append((start_node_id, end_node_id, num_driver))
-                    # else:
-                    #     print("suggested to stay where it is")
 
                     # book keeping for training
                     temp_a = np.zeros(self.action_dim)
@@ -225,6 +222,7 @@ class Estimator:
                     curr_state_value.append(value_output[grid_valid_idx])
                     next_state_ids.append(self.valid_neighbor_node_id[grid_valid_idx, curr_action_idx])
                     curr_neighbor_mask_policy.append(curr_neighbor_mask[grid_valid_idx])
+
         return action_tuple, np.stack(valid_prob), \
                np.stack(policy_state) if len(policy_state) > 0 else np.array([]), \
                np.stack(action_choosen_mat) if len(action_choosen_mat) > 0 else np.array([]), curr_state_value, \

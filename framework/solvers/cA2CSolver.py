@@ -25,8 +25,6 @@ class cA2CSolver(TestingSolver):
 
         super().__init__(**params)
 
-
-
         self.sess = tf.Session()
         self.time_periods = self.params['dataset']["time_periods"]
         self.log_dir = self.dpath
@@ -124,7 +122,7 @@ class cA2CSolver(TestingSolver):
         if self.verbose:
             pbar = tqdm(total=self.params["iterations"], desc="Training cA2C (iters)")
         for n_iter in np.arange(self.params["iterations"]):
-            RANDOM_SEED = n_iter + 40 # don't know why 40
+            RANDOM_SEED = n_iter + 40
             self.env.seed(RANDOM_SEED)
             save_random_seed.append(RANDOM_SEED)
             batch_s, batch_a, batch_r = [], [], []
@@ -152,14 +150,16 @@ class cA2CSolver(TestingSolver):
             order_response_rates = []
             nodes_with_drivers_and_orders = []
             non_zero_periods = 0
-            for ii in np.arange(time_periods):
+            done = False
+            loop_n = 0
+            while not done:
                 # record_curr_state.append(curr_state)
                 # INPUT: state,  OUTPUT: action
 
                 action_tuple, valid_action_prob_mat, policy_state, action_choosen_mat, \
                 curr_state_value, curr_neighbor_mask, next_state_ids = self.q_estimator.action(s_grid, context, self.params["epsilon"])
                 # context = merged driver locations + order locations
-
+                
                 new_action = self.action_from_valid_prob(valid_action_prob_mat)
 
                 all_drivers = np.sum([n[1]['info'].get_driver_num() for n in self.env.world.nodes(data=True)])
@@ -172,7 +172,7 @@ class cA2CSolver(TestingSolver):
                 immediate_reward = new_info['reward_per_node']
 
                 # Save transition to replay memory
-                if ii != 0 and policy_state_prev.shape[0] > 0:
+                if loop_n != 0 and policy_state_prev.shape[0] > 0:
                     #not sure if it is valid to skip prev time intervals; zero is because there were no actions at prev step
                     # r1, c0
                     r_grid = self.stateprocessor.to_grid_rewards(immediate_reward)
@@ -213,13 +213,13 @@ class cA2CSolver(TestingSolver):
                 batch_reward_gmv.append(new_reward)
                 order_response_rates.append(new_info['served_orders']/(new_info['total_orders']+0.0001))
                 curr_num_actions.append(new_info['served_orders'])
-                num_conflicts_drivers.append(collision_action(action_tuple))
                 nodes_with_drivers_and_orders.append((new_info['nodes_with_drivers'],new_info['nodes_with_orders'],len(self.world)))
+            
+                loop_n += 1
             if non_zero_periods == 0:
                 logging.error("No actions appeared on Train data, probably too busy drivers")
 
-            episode_testing_stats = self.do_test_iteration()
-            self.log['iterations_stats'][str(n_iter)] = episode_testing_stats
+            self.run_tests(n_iter, draw=True, verbose=1)
             episode_reward = np.sum(batch_reward_gmv[1:])
             episode_rewards.append(episode_reward)
             order_response_rate_episode.append(order_response_rates)
@@ -293,7 +293,7 @@ class cA2CSolver(TestingSolver):
 
         :return: an action vector for taxi_gym_batch environment, which is a concatenation of actions per cell
         '''
-        one_action_shape = self.env.get_action_space_shape()[0]
+        one_action_shape = self.env.action_space_shape[0] # get space shape for single action! (don't use geter)
         action = np.zeros(one_action_shape*len(self.world))
         for n in self.world.nodes():
             action[n*one_action_shape:(n+1)*one_action_shape] = valid_prob[n]

@@ -206,5 +206,5 @@ class Experiment:
         logging.info("{} datasets generated".format(generated))
         self.run_solvers("Train", force = self.pm.get('full_rerun') == 1)
         logging.info("All methods trained")
-        self.run_solvers("Test", force = self.pm.get('full_rerun') == 1)
+        # self.run_solvers("Test", force = self.pm.get('full_rerun') == 1)
         logging.info("Experiment {} completed".format(self.tag))
