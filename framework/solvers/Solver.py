@@ -29,13 +29,10 @@ class Solver:
         return self.get_name() + ParameterManager.get_param_footprint(self.get_footprint_params())
 
     def run(self):
-        if "mode" not in self.params:
-            self.train()
-            self.test()
-            return self.log
-        if self.params["mode"] == "Train":
+        if "mode" not in self.params or self.params["mode"] == "Train":
             self.train()
             self.save()
+            return self.log
         if self.params["mode"] == "Test":
             self.load()
             self.test()

@@ -12,6 +12,7 @@ from framework.solvers.cA2C.cA2C import *
 from framework.solvers.TestingSolver import TestingSolver
 from framework.Generator import Generator
 from framework.ParameterManager import ParameterManager
+from framework.solvers.callbacks import EpisodeStatsLogger
 
 class cA2CSolver(TestingSolver):
 
@@ -33,6 +34,8 @@ class cA2CSolver(TestingSolver):
         self.init_env()
         self.init()
         self.log['init_time'] = time.time() - t1
+
+        self.summary_writer = tf.summary.FileWriter(self.log_dir)
 
     def get_env_params(self):
         env_params = {
@@ -101,24 +104,12 @@ class cA2CSolver(TestingSolver):
 
     def train(self):
         t1 = time.time()
-        time_periods = self.time_periods
         replay = ReplayMemory(memory_size=1e+6, batch_size=int(3e+3))
         policy_replay = policyReplayMemory(memory_size=1e+6, batch_size=int(3e+3))
 
         save_random_seed = []
-        episode_dispatched_drivers = []
-
-        all_rewards = []
-        order_response_rate_episode = []
-        value_table_sum = []
-        episode_rewards = []
-        episode_conflicts_drivers = []
-        record_all_order_response_rate = []
-        self.log['iterations_stats'] = {}
-
         global_step1 = 0
         global_step2 = 0
-        RATIO = 1
         if self.verbose:
             pbar = tqdm(total=self.params["iterations"], desc="Training cA2C (iters)")
         for n_iter in np.arange(self.params["iterations"]):
@@ -127,8 +118,6 @@ class cA2CSolver(TestingSolver):
             save_random_seed.append(RANDOM_SEED)
             batch_s, batch_a, batch_r = [], [], []
             batch_reward_gmv = []
-            epsiode_reward = 0
-            num_dispatched_drivers = 0
 
             # reset env
             observation = self.env.reset()
@@ -144,12 +133,6 @@ class cA2CSolver(TestingSolver):
             # s_grid has income from by to_grid_states
 
             # record rewards to update the value table
-            episodes_immediate_rewards = []
-            num_conflicts_drivers = []
-            curr_num_actions = []
-            order_response_rates = []
-            nodes_with_drivers_and_orders = []
-            non_zero_periods = 0
             done = False
             loop_n = 0
             while not done:
@@ -161,10 +144,6 @@ class cA2CSolver(TestingSolver):
                 # context = merged driver locations + order locations
                 
                 new_action = self.action_from_valid_prob(valid_action_prob_mat)
-
-                all_drivers = np.sum([n[1]['info'].get_driver_num() for n in self.env.world.nodes(data=True)])
-                all_orders = np.sum([n[1]['info'].get_order_num() for n in self.env.world.nodes(data=True)])
-
                 observation, new_reward, done, new_info = self.env.step(new_action)
                 
                 next_state, info, income_mat = self.observation_to_old_fashioned_info(observation, new_info)
@@ -187,7 +166,6 @@ class cA2CSolver(TestingSolver):
 
                     replay.add(state_mat_prev, action_mat_prev, targets_batch, s_grid)
                     policy_replay.add(policy_state_prev, action_choosen_mat_prev, advantage, curr_neighbor_mask_prev)
-                    non_zero_periods += 1
 
                 # for updating value network
                 state_mat_prev = s_grid
@@ -209,29 +187,15 @@ class cA2CSolver(TestingSolver):
 
                 # c1
                 context = self.stateprocessor.compute_context(info)
-                all_rewards.append(new_reward)
                 batch_reward_gmv.append(new_reward)
-                order_response_rates.append(new_info['served_orders']/(new_info['total_orders']+0.0001))
-                curr_num_actions.append(new_info['served_orders'])
-                nodes_with_drivers_and_orders.append((new_info['nodes_with_drivers'],new_info['nodes_with_orders'],len(self.world)))
-            
                 loop_n += 1
-            if non_zero_periods == 0:
-                logging.error("No actions appeared on Train data, probably too busy drivers")
 
+            episode_info = self.env.get_episode_info()
+            w = EpisodeStatsLogger(self.summary_writer)
+            w.write(episode_info, n_iter)
+
+            # running tests
             self.run_tests(n_iter, draw=True, verbose=1)
-            episode_reward = np.sum(batch_reward_gmv[1:])
-            episode_rewards.append(episode_reward)
-            order_response_rate_episode.append(order_response_rates)
-            record_all_order_response_rate.append(order_response_rates)
-            episode_conflicts_drivers.append(int(np.sum(num_conflicts_drivers[:-1])))
-            episode_dispatched_drivers.append(curr_num_actions)
-
-            #(n_iter, episode_reward, n_iter_order_response_rate, episode_dispatched_drivers[-1], episode_conflicts_drivers[-1])
-
-            # overwriting
-            pkl.dump([episode_rewards, order_response_rate_episode, save_random_seed, episode_conflicts_drivers,
-                         episode_dispatched_drivers, nodes_with_drivers_and_orders], open(os.path.join(self.log_dir, "{}_results.pkl".format(self.solver_signature)), "wb"))
 
             # update value network
             for _ in np.arange(self.params['batch_size']):
@@ -255,12 +219,6 @@ class cA2CSolver(TestingSolver):
             pbar.close()
 
         self.log['train_time'] = time.time() - t1
-        self.log["episode_rewards"] = episode_rewards
-        self.log["order_response_rate_episode"] = order_response_rate_episode
-        self.log["record_all_order_response_rate"] = record_all_order_response_rate
-        self.log["episode_conflicts_drivers"] = episode_conflicts_drivers
-        self.log["episode_dispatched_drivers"] = episode_dispatched_drivers
-
 
     def observation_to_old_fashioned_info(self, observation, new_info):
         '''

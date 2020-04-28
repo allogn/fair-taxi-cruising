@@ -10,7 +10,8 @@ class TestOrientedSolver:
             "dataset_type": "chicago",
             "days": 5,
             "number_of_cars": 10,
-            'order_sampling_multiplier': 1
+            'order_sampling_multiplier': 1,
+            "driver_sampling_multiplier": 1
         }
         gen = Generator("testOrientedSolver", generator_params)
         graph_info = gen.generate()

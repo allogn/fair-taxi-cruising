@@ -3,16 +3,9 @@ import numpy as np
 from stable_baselines.common.callbacks import BaseCallback
 from collections.abc import Iterable
 
-class TensorboardCallback(BaseCallback):
-    """
-    Custom callback for plotting additional values in tensorboard.
-    """
-    def __init__(self, verbose=0):
-        self.is_tb_set = False
-        super(TensorboardCallback, self).__init__(verbose)
-
-    def _on_step(self) -> bool:
-        pass
+class EpisodeStatsLogger:
+    def __init__(self, tb_writer):
+        self.writer = tb_writer
 
     def create_hist(self, values):
         counts, bin_edges = np.histogram(values)#, bins=30)
@@ -32,6 +25,42 @@ class TensorboardCallback(BaseCallback):
         for c in counts:
             hist.bucket.append(c)
         return hist
+    
+    def write(self, stats, step):
+        values = []
+        if len(stats['rewards']) == 0:
+            return True
+        for k, val in stats.items():
+            if k == 'rewards':
+                assert len(val) > 0
+                values.append(tf.Summary.Value(tag='reward/' + k, histo=self.create_hist(val)))
+                values.append(tf.Summary.Value(tag='reward/' + k + '_mean', simple_value=float(np.mean(val))))
+                values.append(tf.Summary.Value(tag='reward/' + k + '_std', simple_value=float(np.std(val))))
+                values.append(tf.Summary.Value(tag='reward/' + k + '_sum', simple_value=float(np.sum(val))))
+                continue
+            if isinstance(val, Iterable):
+                assert len(val) > 0, k
+                values.append(tf.Summary.Value(tag='stats/' + k, histo=self.create_hist(val)))
+                values.append(tf.Summary.Value(tag="stats/" + k + '_mean', simple_value=float(np.mean(val))))
+                values.append(tf.Summary.Value(tag="stats/" + k + '_min', simple_value=float(np.min(val))))
+                values.append(tf.Summary.Value(tag="stats/" + k + '_sum', simple_value=float(np.sum(val))))
+            else:
+                assert type(val) == float
+                assert type(k) == str
+                values.append(tf.Summary.Value(tag="stats/" + k, simple_value=val))
+        summary = tf.Summary(value=values)
+        self.writer.add_summary(summary, step)
+
+class TensorboardCallback(BaseCallback):
+    """
+    Custom callback for plotting additional values in tensorboard.
+    """
+    def __init__(self, verbose=0):
+        self.is_tb_set = False
+        super(TensorboardCallback, self).__init__(verbose)
+
+    def _on_step(self) -> bool:
+        pass
 
     def _on_rollout_end(self) -> None:
         """
@@ -39,29 +68,11 @@ class TensorboardCallback(BaseCallback):
 
         Retrieve epoch data from environment and plot it
         """
-        values = []
-        stats_vec = self.model.get_env().env_method("get_episode_info")
-        stats = stats_vec[0]
-        if len(stats['rewards']) == 0:
-            return True
-        for k, val in stats.items():
-            if k == 'rewards':
-                values.append(tf.Summary.Value(tag='reward/' + k, histo=self.create_hist(val)))
-                values.append(tf.Summary.Value(tag='reward/' + k + '_mean', simple_value=float(np.mean(val))))
-                values.append(tf.Summary.Value(tag='reward/' + k + '_std', simple_value=float(np.std(val))))
-                values.append(tf.Summary.Value(tag='reward/' + k + '_sum', simple_value=float(np.sum(val))))
-                continue
-            if isinstance(val, Iterable):
-                values.append(tf.Summary.Value(tag='stats/' + k, histo=self.create_hist(val)))
-                values.append(tf.Summary.Value(tag="stats/" + k + '_mean', simple_value=float(np.mean(val))))
-                values.append(tf.Summary.Value(tag="stats/" + k + '_std', simple_value=float(np.std(val))))
-                values.append(tf.Summary.Value(tag="stats/" + k + '_sum', simple_value=float(np.sum(val))))
-            else:
-                assert type(val) == float
-                assert type(k) == str
-                values.append(tf.Summary.Value(tag="stats/" + k, simple_value=val))
-        summary = tf.Summary(value=values)
-        self.locals['writer'].add_summary(summary, self.num_timesteps)
+        w = EpisodeStatsLogger(self.locals['writer'])
+        stats = self.model.get_env().env_method("get_episode_info")[0] 
+        # 0 because env is vectorized, and we take result only from the first env in the vector
+        
+        w.write(stats, self.rollout_calls)
         return True  
 
 
@@ -76,6 +87,6 @@ class TestingCallback(BaseCallback):
         self.draw = draw
         self.verbose = verbose
 
-    def _on_step(self) -> bool:
-        if self.eval_freq > 0 and self.n_calls % self.eval_freq == 0:
-            self.solver.run_tests(self.n_calls, draw=self.draw, verbose=self.verbose)
+    def _on_rollout_end(self) -> bool:
+        if self.eval_freq > 0 and self.rollout_calls % self.eval_freq == 0:
+            self.solver.run_tests(self.rollout_calls, draw=self.draw, verbose=self.verbose)

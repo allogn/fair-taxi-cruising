@@ -117,17 +117,22 @@ class TestingSolver(Solver):
         return image
 
     def test(self):
-        self.run_tests() # some solvers run tests during training stage
+        raise NotImplementedError("Testing is performed during training for all solvers. Testing on unobserved data is not implemented.")
+        # self.run_tests()
 
     def run_tests(self, training_iteration, draw = False, verbose = 1):
         t1 = time.time()
         self.log['seeds'] = []
 
+        # average per testing iteration
         test_stats = {
+            "total_min_income_per_epoch": [],
+            "total_sum_income_per_epoch": [],
+            "total_avg_income_per_epoch": [],
             "total_reward_per_epoch": [],
-            "total_min_reward_per_epoch": [],
             "total_min_idle_per_epoch": [],
-            "total_idle_per_epoch": [],
+            "total_avg_idle_per_epoch": [],
+            "total_sum_idle_per_epoch": []
         }
 
         total_test_days = self.params['testing_epochs']
@@ -140,10 +145,16 @@ class TestingSolver(Solver):
             # need to rereun all experiments in server to plot because current ones
             # are done with graph with missing coordinates
 
-            test_stats["total_min_reward_per_epoch"].append(stats['min_income'][-1])
-            test_stats["total_reward_per_epoch"].append(np.sum(stats['rewards']))
-            test_stats["total_min_idle_per_epoch"].append(stats['min_idle'][-1])
-            test_stats["total_idle_per_epoch"].append(np.mean(stats['idle_reward']))
+            # in the next we take -1 element, meaning the last training epizode
+            # income and idle are distributions over drivers per episode
+            # reward is distribution per iteration per episode
+            test_stats["total_min_income_per_epoch"].append(np.min(stats['driver_income'][-1]))
+            test_stats["total_sum_income_per_epoch"].append(np.sum(stats['driver_income'][-1]))
+            test_stats["total_avg_income_per_epoch"].append(np.sum(stats['driver_income'][-1]))
+            test_stats["total_reward_per_epoch"].append(np.sum(stats['rewards'][-1]))
+            test_stats["total_min_idle_per_epoch"].append(np.min(stats['driver_income'][-1]))
+            test_stats["total_avg_idle_per_epoch"].append(np.mean(stats['idle_periods'][-1]))
+            test_stats["total_sum_idle_per_epoch"].append(np.sum(stats['idle_periods'][-1]))
             if verbose:
                 pbar.update()
 

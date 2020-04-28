@@ -5,10 +5,9 @@ from framework.Generator import Generator
 
 class TestGymSolver:
 
-    def test_predict(self):
+    def test_basic_training(self):
         '''
-        Test predict function, that should return multidriver action for multidriver observation,
-        given the trained single driver model under stable-baselines framework
+        Test if training on trivial parameter set does not fail
         '''
 
         generator_params = {
@@ -45,11 +44,6 @@ class TestGymSolver:
 
         solver = GymSolver(**solver_params)
         solver.train()
-        solver.save()
-
-        solver = GymSolver(**solver_params)
-        solver.load()
-        solver.test()
 
         solver_params["include_income_to_observation"] = 1
         solver_params["continuous_observation"] = 1
