@@ -65,12 +65,13 @@ class TensorboardCallback(BaseCallback):
     def _on_rollout_end(self) -> None:
         """
         This event is triggered before updating the policy.
+        Might not be ther end of an episode
 
         Retrieve epoch data from environment and plot it
         """
         w = EpisodeStatsLogger(self.locals['writer'])
-        stats = self.model.get_env().env_method("get_episode_info")[0] 
-        # 0 because env is vectorized, and we take result only from the first env in the vector
+        stats = self.model.get_env().env_method("get_episode_info")[-1] 
+        # -1 because env is vectorized, and we take result only from the last env in the vector (can be any)
         
         w.write(stats, self.rollout_calls)
         return True  

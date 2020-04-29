@@ -48,7 +48,8 @@ class TestcA2CSolver:
             "minimum_reward": 0,
             "batch_size": 20,
             "include_income_to_observation": 1,
-            "testing_epochs": 2
+            "testing_epochs": 2,
+            "draw": 0
         }
         solv = cA2CSolver(**ca2c_params)
 

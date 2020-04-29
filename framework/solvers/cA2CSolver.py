@@ -195,7 +195,7 @@ class cA2CSolver(TestingSolver):
             w.write(episode_info, n_iter)
 
             # running tests
-            self.run_tests(n_iter, draw=True, verbose=1)
+            self.run_tests(n_iter, draw=self.params['draw'] == 1, verbose=0)
 
             # update value network
             for _ in np.arange(self.params['batch_size']):

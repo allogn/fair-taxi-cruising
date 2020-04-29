@@ -45,13 +45,12 @@ class GymSolver(TestingSolver):
         self.train_env = SubprocVecEnv([self.make_env(env_id, i, seed+i, self.env_params) for i in range(num_cpu)])
 
         self.train_env = VecNormalize(self.train_env, norm_obs=False, norm_reward=False)
-        self.test_env_native = SubprocVecEnv([self.make_env(env_id, num_cpu+1, seed+num_cpu+1, self.env_params)])
-        self.test_env_native = VecNormalize(self.test_env_native, norm_obs=False, norm_reward=False)
 
-        # self.model = self.Model(Policy, self.train_env, verbose=0, nminibatches=nminibatches, tensorboard_log=os.path.join(self.dpath,self.solver_signature))
-                                # minibatches are important, and no parallelism
-                                #n_steps=self.params['dataset']['time_periods']+1,
-        self.model = self.Model(Policy, self.train_env, verbose=0, nminibatches=4, 
+        # testing not implemented so far
+        # self.test_env_native = SubprocVecEnv([self.make_env(env_id, 1, seed+num_cpu+1, self.env_params)])
+        # self.test_env_native = VecNormalize(self.test_env_native, norm_obs=False, norm_reward=False)
+
+        self.model = self.Model(Policy, self.train_env, verbose=0, nminibatches=nminibatches, 
                                 tensorboard_log=os.path.join(self.dpath,self.solver_signature), 
                                 n_steps=self.params['dataset']['time_periods']+1)
 
@@ -128,7 +127,7 @@ class GymSolver(TestingSolver):
             return True
 
         if self.params.get("callback", 0) == 1:
-            return [TensorboardCallback(),TestingCallback(self, verbose=1, eval_freq=1, draw=True)]
+            return [TensorboardCallback(),TestingCallback(self, verbose=0, eval_freq=10, draw=self.params['draw'] == 1)]
         else:
             return no_callback
 
