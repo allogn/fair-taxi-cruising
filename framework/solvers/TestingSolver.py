@@ -145,16 +145,13 @@ class TestingSolver(Solver):
             # need to rereun all experiments in server to plot because current ones
             # are done with graph with missing coordinates
 
-            # in the next we take -1 element, meaning the last training epizode
-            # income and idle are distributions over drivers per episode
-            # reward is distribution per iteration per episode
-            test_stats["total_min_income_per_epoch"].append(np.min(stats['driver_income'][-1]))
-            test_stats["total_sum_income_per_epoch"].append(np.sum(stats['driver_income'][-1]))
-            test_stats["total_avg_income_per_epoch"].append(np.sum(stats['driver_income'][-1]))
-            test_stats["total_reward_per_epoch"].append(np.sum(stats['rewards'][-1]))
-            test_stats["total_min_idle_per_epoch"].append(np.min(stats['driver_income'][-1]))
-            test_stats["total_avg_idle_per_epoch"].append(np.mean(stats['idle_periods'][-1]))
-            test_stats["total_sum_idle_per_epoch"].append(np.sum(stats['idle_periods'][-1]))
+            test_stats["total_min_income_per_epoch"].append(np.min(stats['driver_income']))
+            test_stats["total_sum_income_per_epoch"].append(np.sum(stats['driver_income']))
+            test_stats["total_avg_income_per_epoch"].append(np.sum(stats['driver_income']))
+            test_stats["total_reward_per_epoch"].append(np.sum(stats['rewards']))
+            test_stats["total_min_idle_per_epoch"].append(np.min(stats['driver_income']))
+            test_stats["total_avg_idle_per_epoch"].append(np.mean(stats['idle_periods']))
+            test_stats["total_sum_idle_per_epoch"].append(np.sum(stats['idle_periods']))
             if verbose:
                 pbar.update()
 
