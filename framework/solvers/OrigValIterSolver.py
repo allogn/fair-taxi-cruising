@@ -20,7 +20,7 @@ class OrigValIterSolver(OrigSolver):
         context = [context[idx] for idx in target_grids]
         return context
 
-    def train(self):
+    def train(self, db_save_callback = None):
         n_side = 6
         GAMMA = 0.9
         l_max = 9

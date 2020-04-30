@@ -91,7 +91,7 @@ class LinearSolver(TestingSolver):
                 output_multiplicity[neighbor_index[t]] += 1
         return action_tuples, output, output_multiplicity
 
-    def train(self):
+    def train(self, db_save_callback = None):
         logging.info("Training Value Function...")
         self.valueFunc = ValIterSolver(**self.params)
         self.valueFunc.verbose = self.verbose

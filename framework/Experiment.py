@@ -131,12 +131,14 @@ class Experiment:
             logging.info("Starting {} of Solver {}".format(solver_params["mode"], solver_name))
             solver.verbose = True
 
-        result = solver.run()
+        def db_update_callback(result):
+            try:
+                db_client.solution.insert_one(result)
+            except Exception as e:
+                logging.error("Failed to save result: {}, Result: {}".format(e, result))
+
+        solver.run(db_update_callback)
         signal.alarm(0)
-        try:
-            db_client.solution.insert_one(result)
-        except Exception as e:
-            logging.error("Failed to save result: {}, Result: {}".format(e, result))
 
     def generate_solver_params(self, mode):
         if mode == "Train":

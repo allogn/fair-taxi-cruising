@@ -5,7 +5,7 @@ class DummySolver(Solver):
     Solver for testing
     '''
 
-    def train(self):
+    def train(self, db_save_callback = None):
         pass
 
     def test(self):

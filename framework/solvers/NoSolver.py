@@ -5,7 +5,7 @@ class NoSolver(TestingSolver):
     def __init__(self, **params):
         super().__init__(**params)
 
-    def train(self):
+    def train(self, db_save_callback = None):
         # do testing instead of training, so that we have some stats to compare right away
         self.run_tests(0, draw = True)
 

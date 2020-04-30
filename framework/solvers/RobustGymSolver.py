@@ -37,7 +37,7 @@ class RobustGymSolver(GymSolver):
             tot_reward.append(np.sum(rewards))
         return np.mean(tot_reward)
 
-    def train(self):
+    def train(self, db_save_callback = None):
         t1 = time.time()
 
         gamma = 0.95

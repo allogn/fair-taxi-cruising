@@ -26,7 +26,7 @@ class SplitSolver(TestingSolver):
         action /= action.shape[0]
         return action
 
-    def train(self):
+    def train(self, db_save_callback = None):
         # split a world into different worlds based on order logs
 
         # create cA2C per each world

@@ -117,7 +117,7 @@ class GymSolver(TestingSolver):
         set_global_seeds(seed)
         return _init
 
-    def get_callback(self):
+    def get_callback(self, db_save_callback):
         """
         Callback called at each step (for DQN an others) or after n steps (see ACER or PPO2)
         :param _locals: (dict)
@@ -131,9 +131,12 @@ class GymSolver(TestingSolver):
         else:
             return no_callback
 
-    def train(self):
+    def train(self, db_save_callback = None):
+        # save whatever we have now, so that we can stop running at any moment without reruns
+        if db_save_callback is not None:
+            db_save_callback(self.log)
         t = time.time()
-        self.model.learn(total_timesteps=self.params['training_iterations'], callback=self.get_callback())
+        self.model.learn(total_timesteps=self.params['training_iterations'], callback=self.get_callback(db_save_callback))
         self.log['training_time'] = time.time() - t
 
     def predict(self, state, info, nn_state = None):

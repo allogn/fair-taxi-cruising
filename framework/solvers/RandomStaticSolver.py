@@ -13,7 +13,7 @@ class RandomStaticSolver(TestingSolver):
     def __init__(self, **params):
         super().__init__(**params)
 
-    def train(self):
+    def train(self, db_save_callback = None):
         world = nx.read_gpickle(os.path.join(self.dpath, "world.pkl"))
         self.A = self.get_random_A(world)
 

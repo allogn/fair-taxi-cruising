@@ -48,4 +48,7 @@ class TestGymSolver:
         solver_params["include_income_to_observation"] = 1
         solver_params["continuous_observation"] = 1
         solver = GymSolver(**solver_params)
-        solver.run()
+
+        def fake_save_callback(result):
+            pass
+        solver.run(fake_save_callback)

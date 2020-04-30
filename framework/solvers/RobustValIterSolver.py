@@ -21,7 +21,7 @@ class RobustValIterSolver(TestingSolver):
     def get_dispatch_action(self, env, state, context):
         return self.vsolver.get_dispatch_action(env, state, context)
 
-    def train(self):
+    def train(self, db_save_callback = None):
         t1 = time.time()
 
         gamma = 0.9

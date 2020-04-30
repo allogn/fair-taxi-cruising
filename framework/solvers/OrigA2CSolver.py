@@ -19,7 +19,7 @@ class OrigA2CSolver(OrigSolver):
         context = [context[idx] for idx in target_grids]
         return context
 
-    def train(self):
+    def train(self, db_save_callback = None):
         temp = np.array(self.env.target_grids) + self.env.M * self.env.N
         target_id_states = self.env.target_grids + temp.tolist()
 

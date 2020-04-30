@@ -102,7 +102,7 @@ class cA2CSolver(TestingSolver):
     def set_random_seed(self, seed):
         pass
 
-    def train(self):
+    def train(self, db_save_callback = None):
         t1 = time.time()
         replay = ReplayMemory(memory_size=1e+6, batch_size=int(3e+3))
         policy_replay = policyReplayMemory(memory_size=1e+6, batch_size=int(3e+3))
@@ -214,6 +214,11 @@ class cA2CSolver(TestingSolver):
             self.saver.save(self.sess, os.path.join(self.log_dir,"{}_model{}.ckpt".format(self.solver_signature, n_iter)))
             if self.verbose:
                 pbar.update()
+
+            if db_save_callback is not None:
+                self.log["n_iter"] = n_iter
+                db_save_callback(self.log)
+            self.save()
 
         if self.verbose:
             pbar.close()

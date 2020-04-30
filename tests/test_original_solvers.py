@@ -31,4 +31,7 @@ class TestOrigSolvers:
         }
 
         solver = OrigNoSolver(**solver_params)
-        solver.run()
+        
+        def fake_save_callback(result):
+            pass
+        solver.run(fake_save_callback)

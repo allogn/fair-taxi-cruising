@@ -95,7 +95,7 @@ class RwSolver(TestingSolver):
             np.nan_to_num(self.Pr[-1],copy=False)
         return self.Pr, self.expected_demand
 
-    def train(self):
+    def train(self, db_save_callback = None):
         all_train_time = time.time()
         t1 = 0
         self.world = nx.read_gpickle(os.path.join(self.dpath, "world.pkl"))

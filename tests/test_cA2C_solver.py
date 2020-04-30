@@ -61,4 +61,6 @@ class TestcA2CSolver:
         curr_state, info, income_mat = solv.observation_to_old_fashioned_info(observation, init_info)
         assert (income_mat == np.zeros((len(world_graph),3))).all()
 
-        solv.run()
+        def fake_save_callback(result):
+            pass
+        solv.run(fake_save_callback)

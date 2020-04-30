@@ -36,7 +36,7 @@ class OrientedSolver(TestingSolver):
             logging.info("Dataset: {}".format(self.params['dataset']))
             raise Exception("Not Implemented")
 
-    def train(self):
+    def train(self, db_save_callback = None):
         pass
 
     def load(self):
