@@ -71,6 +71,8 @@ class TensorboardCallback(BaseCallback):
         """
         w = EpisodeStatsLogger(self.locals['writer'])
         stats = self.model.get_env().env_method("get_episode_info")[-1] 
+        if stats == None:
+            return True # on first rollouts it might happen that none of the environments have finished any of episodes
         # -1 because env is vectorized, and we take result only from the last env in the vector (can be any)
         
         w.write(stats, self.rollout_calls)

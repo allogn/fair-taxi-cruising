@@ -131,13 +131,15 @@ class Experiment:
             logging.info("Starting {} of Solver {}".format(solver_params["mode"], solver_name))
             solver.verbose = True
 
-        def db_update_callback(result):
+        def db_insert_callback(result):
+            if "_id" in result:
+                del result["_id"]
             try:
                 db_client.solution.insert_one(result)
             except Exception as e:
                 logging.error("Failed to save result: {}, Result: {}".format(e, result))
 
-        solver.run(db_update_callback)
+        solver.run(db_insert_callback)
         signal.alarm(0)
 
     def generate_solver_params(self, mode):

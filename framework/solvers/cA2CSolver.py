@@ -216,7 +216,7 @@ class cA2CSolver(TestingSolver):
                 pbar.update()
 
             if db_save_callback is not None:
-                self.log["n_iter"] = n_iter
+                self.log["n_iter"] = int(n_iter)
                 db_save_callback(self.log)
             self.save()
 

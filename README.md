@@ -68,3 +68,5 @@ Monitor experiments by logs in strout and by logs in tensorflow:
 ```
 $ tensorflow --logdir $ALLDATA_PATH/generated/<name of experiment>
 ```
+
+An experiment can be stopped at any moment (for example, satisfactory performance). Next run of the same experiment will continue running solvers that have never been initiated (if full_rerun parameter of an experiment is set to 0), or will clean all existing results. Rerun of a particular solver can be achieved by removing entries from the database with `{"solver": "name-of-solver"}`.
