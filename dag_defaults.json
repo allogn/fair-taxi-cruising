@@ -38,7 +38,11 @@
       },
       "No": {},
       "Diff": {},
-      "Oriented": {}
+      "Oriented": {},
+      "Robust": {},
+      "Split": {
+        "shrinking_fraction": 0.8
+      }
     },
     "problem": {
       "wc": 0.1,
