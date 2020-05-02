@@ -19,7 +19,7 @@ class TestSplitSolver:
             for n2 in n[1]['nodes']:
                 assert G.has_node(n2)
             assert nx.is_weakly_connected(G.subgraph(n[1]['nodes']))
-        assert superworld.number_of_edges() >= 8 # both directions
+        assert superworld.number_of_edges() >= 4
         # might be greater than 8, because splitting might not be exactly square-based (due to hilbert approximation)
         for n in G.nodes(data=True):
             assert 'supernode' in n[1]

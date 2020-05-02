@@ -36,7 +36,7 @@ class SplitSolver(TestingSolver):
             for n in node_mapping[center_node]:
                 world.nodes[n]['supernode'] = i
             i += 1
-        superworld = nx.DiGraph()
+        superworld = nx.Graph() # we always use graph to simplify training, for both world and superworld
         superworld.add_nodes_from(new_nodes)
         # we assume all areas are approximately the same size, so we add edges in superworld of the same length
         edges = set()
