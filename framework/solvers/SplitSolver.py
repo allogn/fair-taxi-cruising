@@ -49,30 +49,53 @@ class SplitSolver(TestingSolver):
 
         return superworld
 
-    def find_car_fraction_to_dest(self):
+    @staticmethod
+    def get_flow_per_edge(idle_drivers, arriving_drivers, expected_orders, superworld):
         '''
-        This finds what is the fraction of idle cars that needs to be send due to order density
-        together with the destinations
+        :param idle_drivers: a vector of idle drivers per supernode in the current time step
+        :param arriving_drivers: a vector of drivers that arrive due to customers in the next time step
+        :param expected_orders: a vector of number of orders expected in the next time step
+        :param superworld: a superworld
+        :returns: a dict keyed by [node1][node2] with number of cars to be travelled
         '''
-        bigraph = self.build_bipartite_graph()
-        idle_dispatch_list = self.solve_bimatching(bigraph)
+        directed_superworld = nx.DiGraph(superworld)
+        idle_drivers = np.array(idle_drivers)
+        arriving_drivers = np.array(arriving_drivers)
+        expected_orders = np.array(expected_orders)
+        assert np.sum(idle_drivers) > 0
+        if np.sum(expected_orders) == 0:
+            expected_orders = np.ones(expected_orders.shape) # aim for a uniform driver distribution
+        expected_orders = expected_orders / np.sum(expected_orders)
+        total_drivers_with_arriving = np.sum(idle_drivers + arriving_drivers)
 
-    def build_bipartite_graph(self):
-        '''
-    	Build a bigraph between orders and destinations
-        with supply/demand equal to the excess of orders in an area.
-        On one side - currently existing distribution of drivers
-        On another side - a distribution that corresponds to the orders.
-        '''
-        expected_drivers = self.get_expected_drivers_per_supernode()
-        expected_orders = self.get_expected_orders_per_supernode()
+        # distribute drivers according to customers
+        required_drivers = np.array([int(n*total_drivers_with_arriving) for n in expected_orders]) # rounds down
+        required_drivers -= arriving_drivers # substract those we can not control
+        # we might end up with negative values, because too many are arriving at the same place, for example
+        # or with positive, becauce of rounding up/down
+        # randomly assign or substract excess drivers
+        required_drivers[required_drivers < 0] = 0
+        total_idle_drivers = np.sum(idle_drivers)
+        s = np.sum(required_drivers)
+        while total_idle_drivers - s != 0:
+            ind = np.nonzero(required_drivers)
+            a = np.random.choice(ind[0])
+            required_drivers[a] += (total_idle_drivers - s)/np.abs(total_idle_drivers - s)
+            s = np.sum(required_drivers)
 
-        return None
+        # set demand property on superworld graph and solve mincostflow
+        nx.set_edge_attributes(directed_superworld, 1, name='weight') # assume approximately equal distances
+        demand = required_drivers - idle_drivers # positive demand = inflow
+        assert np.sum(demand) == 0
+        nx.set_node_attributes(directed_superworld, { i : demand[i] for i in range(len(demand)) }, "demand")
+        flow_per_edge_dict = nx.min_cost_flow(directed_superworld, demand='demand', weight='weight')
+
+        return flow_per_edge_dict
 
     def get_expected_drivers_per_supernode(self):
         '''
-        Expected drivers are drivers that are currently idle in the area
-        + drivers that will arrive there in the next iteration
+        Returns a vector of idle drivers in the next time step. Includes those who will arrive
+        due to customers + idle driver distribution in the current step
         '''
         ...
 
@@ -80,45 +103,50 @@ class SplitSolver(TestingSolver):
         '''
         @return 
         '''
-
-    def solve_bimatching(self, bigraph):
-        '''
-        Find how many cars should go where, based on the bigraph
-        @return number of cars with source and destinations
-        '''
-        return None
-
-    def predict(self, observation, info):
-        # create a manager
-
-        self.find_car_fraction_to_dest()
-        # dispatch partially, by updating the observation
-
-        # for each idle driver - manager fisrt takes care of the correct distribution
-
-
-        # manager sends closest idle drivers so to fix the distribution
-
-
-        # within each cell ask cA2C to solve the rest
-
-        action = np.ones(self.testing_env.get_action_space_shape())
-        action /= action.shape[0]
-        return action
+        ...
 
     def train(self, db_save_callback = None):
-        # split a world into different worlds based on order logs
+        self.init_subsolvers()
 
-        # create cA2C per each world
-
-        # train each cA2C using an estimate of average drivers, and adding drivers in random
+        for i in range(self.params['iterations']):
+            for n in self.superworld.nodes(data=True):
+                s = n[1]['solver']
+                s.load()
+                # train each subsolver using an estimate of average drivers, and adding drivers in random
+                self.generate_random_drivers()
+                s.train()
+                s.save()
+            self.test()
 
         # make sure the model is saved
+        self.save()
 
-        pass
+    def generate_random_drivers(self):
+        ...
 
-    def load(self):
-        pass
+    def test(self):
+        ...
+        # at each step first apply targeted dispatching, then dispatching per solver
+        # idle_drivers = self.get_idle_drivers_per_supernode()
+        # arriving_drivers = self.get_arriving_drivers_per_supernode()
+        # expected_orders = self.get_expected_orders_per_supernode()
+        # cars_per_edge = self.get_flow_per_edge()
+        # dispatch_action_list = self.get_dispatch_action_list_from_flow(cars_per_edge)
+        # # input: dispatch_action_list: a list of <destination, number_of_drivers, reward, time_length>
+        # # output: <destination, number_of_drivers, reward, time_length, a list of driver ids assigned>
+        # assigned_drivers = self.env.dispatch_drivers(dispatch_action_list)
 
-    def save(self):
-        pass
+        # # predict per each subsolver, apply to subworlds, sync with superworld
+        # for n in self.superworld.nodes(data=True):
+        #     env = n[1]['env']
+        #     env.sync(self.env)
+        #     action = n[1]['solver'].predict(env.get_observation())
+        #     env.step(action)
+        #     self.env.sync(env)
+        # self.env.apply() # apply all changes after each subworld processes the situation
+
+    def get_dispatch_action_list_from_flow(self, flow_per_edge):
+        ...
+
+    def init_subsolvers(self):
+        ...

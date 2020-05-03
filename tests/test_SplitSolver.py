@@ -23,3 +23,36 @@ class TestSplitSolver:
         # might be greater than 8, because splitting might not be exactly square-based (due to hilbert approximation)
         for n in G.nodes(data=True):
             assert 'supernode' in n[1]
+
+    def test_flow_per_edge(self):
+        g = nx.complete_graph(5)
+
+        # test excess drivers
+        idle_drivers = [0, 0, 10, 0, 23]
+        arriving_drivers = [0, 0, 0, 0, 0] 
+        expected_orders = [2, 2, 0, 0, 0]
+        flow_per_edge = SplitSolver.get_flow_per_edge(idle_drivers, arriving_drivers, expected_orders, g)
+        s = [0, 0, 10, 0, 23]
+        for source, val in flow_per_edge.items():
+            for dest, flow in val.items():
+                assert flow >= 0
+                s[source] -= flow
+                s[dest] += flow
+        assert s[0] == 17 or s[0] == 16
+        assert s[1] == 16 or s[1] == 17
+        assert s[0] + s[1] == np.sum(idle_drivers)
+        assert np.sum(s[2:]) == 0
+
+        # test arriving drivers
+        idle_drivers = [5, 0, 0, 0, 5]
+        arriving_drivers = [0, 10, 0, 10, 0] 
+        expected_orders = [0, 0, 0, 0, 0]
+        flow_per_edge = SplitSolver.get_flow_per_edge(idle_drivers, arriving_drivers, expected_orders, g)
+        s = np.array(idle_drivers)
+        for source, val in flow_per_edge.items():
+            for dest, flow in val.items():
+                assert flow >= 0
+                s[source] -= flow
+                s[dest] += flow
+        assert np.sum(s) == np.sum(idle_drivers), s
+        assert s[1] == 0 and s[3] == 0 and s[0] > 1 and s[2] > 1 and s[4] > 1, s
