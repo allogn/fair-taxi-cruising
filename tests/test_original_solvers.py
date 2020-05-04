@@ -16,7 +16,6 @@ class TestOrigSolvers:
             "order_distr": "uniform"
         }
 
-        np.random.seed(777)
         gen = Generator("testOrigSolvers", generator_params)
         graph_info = gen.generate()
         world_graph, idle_driver_locations, real_orders, onoff_driver_locations, random_average, dist = gen.load_complete_set()
