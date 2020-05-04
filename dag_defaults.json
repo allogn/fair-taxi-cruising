@@ -6,6 +6,7 @@
       "days": 10,
       "dummy_data_param": 4,
       "orders_density": 0.1,
+      "order_distr": "star",
       "number_of_cars": 10,
       "time_periods_per_hour": 1,
       "order_sampling_multiplier": 1,
@@ -41,7 +42,14 @@
       "Oriented": {},
       "Robust": {},
       "Split": {
-        "shrinking_fraction": 0.8
+        "shrinking_fraction": 0.8,
+        "iterations": 10,
+        "subsolver": "Diff",
+        "weight_poorest": 0,
+        "normalize_rewards": 1,
+        "minimum_reward": 0,
+        "poorest_first": 1,
+        "include_income_to_observation": 0
       }
     },
     "problem": {

@@ -17,7 +17,7 @@ import framework.helpers
 from framework.FileManager import *
 
 class Generator:
-    def __init__(self, title, params):
+    def __init__(self, title, params = None):
         '''
         Requires params:
                 - days, dataset_type, ... (type-specific, like n)
@@ -29,7 +29,21 @@ class Generator:
         Notes:
             - Currently onoff and idle drivers are generated for one day only.
         '''
-
+        if params is None:
+            # set default params for a tiny world
+            params = {
+                "dataset_type": "hexagon",
+                "n": 4,
+                "time_periods": 2,
+                "days": 4,
+                "dummy_data_param": 4,
+                "order_distr": "star",
+                "orders_density": 1,
+                "number_of_cars": 4,
+                "time_periods_per_hour": 1,
+                "order_sampling_multiplier": 1,
+                "driver_sampling_multiplier": 1
+            }
 
         self.params = params
         self.title = title

@@ -2,6 +2,7 @@ import os, sys
 import pickle as pkl
 from framework.solvers.Solver import Solver
 from framework.Generator import Generator
+import networkx as nx
 from framework.FileManager import FileManager
 from framework.Artist import Artist
 import gym
@@ -10,11 +11,8 @@ import time
 import uuid
 import numpy as np
 import logging
-import imageio
-import io
 import tensorflow as tf
 from collections.abc import Iterable
-import matplotlib.pyplot as plt
 
 class TestingSolver(Solver):
     def __init__(self, **params):
