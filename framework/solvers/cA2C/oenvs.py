@@ -332,7 +332,7 @@ class CityReal:
 
         if float(np.sum(idle_diff)) == 0:
             return
-        np.random.seed(self.RANDOM_SEED)
+        # np.random.seed(self.RANDOM_SEED)
         node_ids = np.random.choice(self.target_node_ids, size=[num_added_driver],
                                     p=idle_diff/float(np.sum(idle_diff)))
 
@@ -403,7 +403,7 @@ class CityReal:
         if sum_idle_diff == 0:
 
             return
-        np.random.seed(self.RANDOM_SEED)
+        # np.random.seed(self.RANDOM_SEED)
         node_ids = np.random.choice(self.target_node_ids, size=[n_drivers_to_off],
                                     p=idle_diff / float(sum_idle_diff))
 
@@ -540,7 +540,7 @@ class CityReal:
         """
         time = self.city_time % self.n_intervals
         mean, std = self.idle_driver_dist_time[time]
-        np.random.seed(self.city_time)
+        # np.random.seed(self.city_time)
         return np.round(np.random.normal(mean, std, 1)[0]).astype(int)
 
     def utility_set_neighbor_weight(self, weights):

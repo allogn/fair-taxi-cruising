@@ -15,7 +15,6 @@ class PoissonDistribution(Distribution):
         self._lambda = lam
 
     def sample(self, seed=0):
-        np.random.seed(seed)
         return np.random.poisson(self._lambda, 1)[0]
 
 
@@ -27,7 +26,6 @@ class GaussianDistribution(Distribution):
         self.sigma = sigma  # standard deviation
 
     def sample(self, seed=0):
-        np.random.seed(seed)
         return np.random.normal(self.mu, self.sigma, 1)[0]
 
 

@@ -429,7 +429,6 @@ class policyReplayMemory:
             self.curr_lens = self.states.shape[0]
         else:
             new_sample_lens = s.shape[0]
-            # random.seed(0)
             index = random.randint(0, self.curr_lens - new_sample_lens)
 
             self.states[index:(index + new_sample_lens)] = s
@@ -441,7 +440,6 @@ class policyReplayMemory:
 
         if self.curr_lens <= self.batch_size:
             return [self.states, self.actions, np.array(self.rewards), self.neighbor_mask]
-        # random.seed(0)
         indices = random.sample(range(0, self.curr_lens), self.batch_size)
         batch_s = self.states[indices]
         batch_a = self.actions[indices]
@@ -488,7 +486,6 @@ class ReplayMemory:
             self.curr_lens = self.states.shape[0]
         else:
             new_sample_lens = s.shape[0]
-            # random.seed(0)
             index = random.randint(0, self.curr_lens - new_sample_lens)
 
             self.states[index:(index + new_sample_lens)] = s
@@ -500,7 +497,6 @@ class ReplayMemory:
 
         if self.curr_lens <= self.batch_size:
             return [self.states, self.actions, self.rewards, self.next_states]
-        # random.seed(0)
         indices = random.sample(range(0, self.curr_lens), self.batch_size)
         batch_s = self.states[indices]
         batch_a = self.actions[indices]

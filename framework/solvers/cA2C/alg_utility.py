@@ -171,7 +171,6 @@ def ortho_init(scale=1.0):
             flat_shape = (np.prod(shape[:-1]), shape[-1])
         else:
             raise NotImplementedError
-        np.random.seed(1)
         a = np.random.normal(0.0, 1.0, flat_shape)
         u, _, v = np.linalg.svd(a, full_matrices=False)
         q = u if u.shape == flat_shape else v # pick the one with the correct shape
