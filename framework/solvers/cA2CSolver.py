@@ -110,6 +110,10 @@ class cA2CSolver(TestingSolver):
         save_random_seed = []
         global_step1 = 0
         global_step2 = 0
+
+        # do preliminary test run
+        self.run_tests(0, draw=self.params['draw'] == 1, verbose=0)
+
         if self.verbose:
             pbar = tqdm(total=self.params["iterations"], desc="Training cA2C (iters)")
         for n_iter in np.arange(self.params["iterations"]):
@@ -195,7 +199,7 @@ class cA2CSolver(TestingSolver):
             w.write(episode_info, n_iter)
 
             # running tests
-            self.run_tests(n_iter, draw=self.params['draw'] == 1, verbose=0)
+            self.run_tests(n_iter+1, draw=self.params['draw'] == 1, verbose=0)
 
             # update value network
             for _ in np.arange(self.params['batch_size']):

@@ -90,6 +90,12 @@ class TestingCallback(BaseCallback):
         self.draw = draw
         self.verbose = verbose
 
+    def _on_training_start(self) -> None:
+        """
+        This method is called before the first rollout starts.
+        """
+        self.solver.run_tests(0, draw=self.draw, verbose=self.verbose)
+
     def _on_rollout_end(self) -> bool:
         if self.eval_freq > 0 and self.rollout_calls % self.eval_freq == 0:
             self.solver.run_tests(self.rollout_calls // self.eval_freq, draw=self.draw, verbose=self.verbose)
