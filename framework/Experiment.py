@@ -37,7 +37,7 @@ from framework.ParameterManager import *
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)-3s :: %(levelname)-3s :: %(threadName)s :: %(message)s',
                     datefmt='%m-%d %H:%M',
-                    filename=os.path.join(FileManager.get_root_path(),'MacaoLog.log'),
+                    filename=os.path.join(FileManager.get_all_experiments_data_path(),'ExperimentLog.log'),
                     filemode='a')
 # define a Handler which writes warning messages or higher to the sys.stderr
 console = logging.StreamHandler()
