@@ -124,8 +124,6 @@ class Experiment:
         Solver = eval(solver_name + "Solver")
         z = dict(solver_params)
         solver = Solver(**z)
-        random_seed = time.time()
-        solver.seed(int(random_seed))
 
         if threading.current_thread().name == 'MainThread':
             logging.info("Starting {} of Solver {}".format(solver_params["mode"], solver_name))
@@ -160,6 +158,7 @@ class Experiment:
                     all_params['mode'] = mode
                     all_params['footprint'] = ParameterManager.get_param_footprint(solver_params)
                     all_params['tag'] = self.tag
+                    all_params['seed'] = time.time()
                     if self.db.solution.find_one(all_params) != None:
                        logging.info("{} of {} for {} exists.".format(mode, solver_params['solver'], self.tag))
                        continue

@@ -92,4 +92,4 @@ class TestingCallback(BaseCallback):
 
     def _on_rollout_end(self) -> bool:
         if self.eval_freq > 0 and self.rollout_calls % self.eval_freq == 0:
-            self.solver.run_tests(self.rollout_calls, draw=self.draw, verbose=self.verbose)
+            self.solver.run_tests(self.rollout_calls // self.eval_freq, draw=self.draw, verbose=self.verbose)

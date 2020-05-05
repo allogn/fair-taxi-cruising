@@ -20,7 +20,7 @@ class TestingSolver(Solver):
         self.time_periods = self.params['dataset']["time_periods"]
         self.days = self.params['dataset']["days"]
         self.load_dataset()
-        self.init_gym()
+        self.init_gym(self.params.get('testing_seed',0))
 
         # tf logging
         # self.artist = Artist()
@@ -36,7 +36,7 @@ class TestingSolver(Solver):
         # self.summaries = None
         
 
-    def init_gym(self):
+    def init_gym(self, testing_seed):
         env_params = {
             "world": self.world,
             "orders": self.real_orders,
@@ -50,7 +50,8 @@ class TestingSolver(Solver):
             "minimum_reward": 0,
             "include_income_to_observation": self.params.get('include_income_to_observation', 0) == 1,
             "poorest_first": self.params.get("poorest_first", 0) == 1,
-            "idle_reward": self.params.get("idle_reward", 0) == 1
+            "idle_reward": self.params.get("idle_reward", 0) == 1,
+            "seed": testing_seed
         }
         env_id = "TaxiEnvBatch{}-v01".format(str(uuid.uuid4()))
         gym.envs.register(

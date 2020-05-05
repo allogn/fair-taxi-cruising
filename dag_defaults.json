@@ -35,6 +35,7 @@
         "include_income_to_observation": 1,
         "poorest_first": 1,
         "callback": 1,
+        "save_freq": 10,
         "draw": 1
       },
       "No": {},

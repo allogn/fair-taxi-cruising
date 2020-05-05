@@ -11,6 +11,7 @@ from stable_baselines import A2C, PPO2, ACKTR
 from stable_baselines.common.vec_env import SubprocVecEnv, VecNormalize
 from stable_baselines.common.policies import MlpPolicy, MlpLstmPolicy
 from stable_baselines.common import set_global_seeds
+from stable_baselines.common.callbacks import CheckpointCallback
 
 from framework.solvers.TestingSolver import TestingSolver
 from framework.Generator import Generator
@@ -127,7 +128,11 @@ class GymSolver(TestingSolver):
             return True
 
         if self.params.get("callback", 0) == 1:
-            return [TensorboardCallback(),TestingCallback(self, verbose=0, eval_freq=10, draw=self.params['draw'] == 1)]
+            return [
+                TensorboardCallback(),
+                TestingCallback(self, verbose=0, eval_freq=10, draw=self.params['draw'] == 1),
+                CheckpointCallback(save_freq=self.params['save_freq'], 
+                                    save_path=self.log_dir, name_prefix='gymsave')]
         else:
             return no_callback
 
@@ -174,7 +179,4 @@ class GymSolver(TestingSolver):
         return actions
 
     def load(self):
-        self.model = self.Model.load(os.path.join(self.dpath, "{}_taxi_gym_model".format(self.solver_signature)))
-
-    def save(self):
-        self.model.save(os.path.join(self.dpath, "{}_taxi_gym_model".format(self.solver_signature)))
+        ...
