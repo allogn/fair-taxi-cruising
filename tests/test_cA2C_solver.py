@@ -53,13 +53,13 @@ class TestcA2CSolver:
         }
         solv = cA2CSolver(**ca2c_params)
 
-        # driver+order dist + income + onehot node id + time
-        assert solv.env.get_observation_space_shape() == ((2+3)*len(world_graph) + generator_params["time_periods"],)
+        # driver + order dist + income + time + idle_driver
+        assert solv.env.get_observation_space_shape() == (4*len(world_graph) + generator_params["time_periods"],)
         observation = solv.env.reset()
         init_info = solv.env.get_reset_info()
         assert observation.shape == solv.env.get_observation_space_shape()
         curr_state, info, income_mat = solv.observation_to_old_fashioned_info(observation, init_info)
-        assert (income_mat == np.zeros((len(world_graph),3))).all()
+        assert (income_mat == np.zeros((len(world_graph),))).all()
 
         def fake_save_callback(result):
             pass

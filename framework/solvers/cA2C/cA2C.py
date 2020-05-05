@@ -32,7 +32,7 @@ class Estimator:
         self.action_dim = int(np.max([d for n, d in world.degree()])) + 1 # last one always means staying
         self.state_dim = len(world) * 3 + self.T
         if include_income:
-            self.state_dim += 3
+            self.state_dim += len(world)
 
         self.scope = scope
 
@@ -162,7 +162,7 @@ class Estimator:
         curr_neighbor_mask_policy = []
 
         if self.include_income:
-            grid_ids = np.argmax(s[:, -self.n_valid_grid-3:-3], axis=1)
+            grid_ids = np.argmax(s[:, -2*self.n_valid_grid:-self.n_valid_grid], axis=1)
         else:
             grid_ids = np.argmax(s[:, -self.n_valid_grid:], axis=1) # one-hot encoding of grid_id, returns grid ids
 
@@ -370,7 +370,7 @@ class stateProcessor:
         onehot_grid_id = np.eye(self.n_valid_grids)
 
         if self.include_income:
-            dim = self.n_valid_grids * 3 + T + 3
+            dim = self.n_valid_grids * 4 + T
         else:
             dim = self.n_valid_grids * 3 + T
 
@@ -380,8 +380,8 @@ class stateProcessor:
 
         if self.include_income:
             assert income_mat is not None
-            s_grid[:, -self.n_valid_grids-3:-3] = onehot_grid_id
-            s_grid[:, -3:] = income_mat
+            s_grid[:, -2*self.n_valid_grids:-self.n_valid_grids] = onehot_grid_id
+            s_grid[:, -self.n_valid_grids:] = income_mat
         else:
             s_grid[:, -self.n_valid_grids:] = onehot_grid_id
 

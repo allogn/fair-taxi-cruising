@@ -248,8 +248,8 @@ class cA2CSolver(TestingSolver):
         current_state = current_state_int
         info = self.env.compute_remaining_drivers_and_orders(current_state)
         if self.params['include_income_to_observation']:
-            assert observation[:-3*len(self.world)].shape[0] == 2*len(self.world) + self.env.n_intervals, "Observation is missing income"
-            income_mat = observation[-3*len(self.world):].reshape(len(self.world), 3)
+            assert observation[:-len(self.world)].shape[0] == 3*len(self.world) + self.env.n_intervals, "Observation is missing income"
+            income_mat = observation[-len(self.world):]
         else:
             income_mat = None
         return current_state, info, income_mat
