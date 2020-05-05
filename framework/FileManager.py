@@ -4,18 +4,19 @@ import shutil
 import logging
 
 class FileManager:
+    data_dir = "generated"
     def __init__(self, title):
         self.title = title
         assert(title != None)
-        self.data_dir = "generated"
         if not os.path.isdir(self.get_root_path()):
             raise Exception("Data path does not exist")
 
     def get_data_path(self):
         return os.path.join(self.get_root_path(), self.data_dir, self.title)
 
-    def get_all_experiments_data_path(self):
-        return os.path.join(self.get_root_path(), self.data_dir)
+    @staticmethod
+    def get_all_experiments_data_path():
+        return os.path.join(FileManager.get_root_path(), FileManager.data_dir)
 
     def get_relative_data_path(self):
         return os.path.join(self.data_dir, self.title)
