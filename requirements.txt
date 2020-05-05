@@ -20,7 +20,6 @@ google-auth-oauthlib==0.4.1
 google-pasta==0.2.0
 grpcio==1.27.2
 gym==0.17.1
--e git+https://github.com/allogn/gym-taxi.git@290b97be46d359c3fa154b866a87562d72c854d2#egg=gym_taxi&subdirectory=../../gym-taxi
 h5py==2.10.0
 hilbertcurve==1.0.3
 idna==2.9
@@ -95,7 +94,6 @@ scipy==1.4.1
 seaborn==0.10.0
 Send2Trash==1.5.0
 six==1.14.0
--e git+https://github.com/allogn/stable-baselines.git@ea1162638d4ab1df7deeca61dac3308054931233#egg=stable_baselines&subdirectory=../../stable-baselines
 tensorboard==1.15.0
 tensorflow==1.15.0
 tensorflow-estimator==1.15.1
