@@ -28,7 +28,7 @@ from framework.solvers.OrigValIterSolver import *
 from framework.solvers.OrigA2CSolver import *
 from framework.solvers.GymSolver import *
 #from framework.solvers.RobustGymSolver import *
-#from framework.solvers.OrientedSolver import *
+from framework.solvers.OrientedSolver import *
 
 from framework.MongoDatabase import *
 from framework.ParameterManager import *
@@ -121,6 +121,7 @@ class Experiment:
     @staticmethod
     def run_solver(solver_params, db_client):
         solver_name = solver_params["solver"]
+        solver_params['seed'] = time.time() # must be here, not in the parent function. Otherwise solver lookup by params does not work.
         Solver = eval(solver_name + "Solver")
         z = dict(solver_params)
         solver = Solver(**z)
@@ -158,7 +159,6 @@ class Experiment:
                     all_params['mode'] = mode
                     all_params['footprint'] = ParameterManager.get_param_footprint(solver_params)
                     all_params['tag'] = self.tag
-                    all_params['seed'] = time.time()
                     if self.db.solution.find_one(all_params) != None:
                        logging.info("{} of {} for {} exists.".format(mode, solver_params['solver'], self.tag))
                        continue

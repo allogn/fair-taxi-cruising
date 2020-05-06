@@ -111,6 +111,10 @@ class cA2CSolver(TestingSolver):
         global_step1 = 0
         global_step2 = 0
 
+        self.log['time_batch'] = 0
+        self.log['time_rollout'] = 0
+        self.log['time_tests'] = 0
+
         # do preliminary test run
         self.run_tests(0, draw=self.params['draw'] == 1, verbose=0)
 
@@ -139,6 +143,7 @@ class cA2CSolver(TestingSolver):
             # record rewards to update the value table
             done = False
             loop_n = 0
+            time_rollout = time.time()
             while not done:
                 # record_curr_state.append(curr_state)
                 # INPUT: state,  OUTPUT: action
@@ -197,10 +202,14 @@ class cA2CSolver(TestingSolver):
             episode_info = self.env.get_episode_info()
             w = EpisodeStatsLogger(self.summary_writer)
             w.write(episode_info, n_iter)
+            self.log["time_rollout"] += time.time() - time_rollout
 
             # running tests
+            time_tests = time.time()
             self.run_tests(n_iter+1, draw=self.params['draw'] == 1, verbose=0)
+            self.log["time_tests"] += time.time() - time_tests
 
+            time_batch = time.time()
             # update value network
             for _ in np.arange(self.params['batch_size']):
                 batch_s, _, batch_r, _ = replay.sample()
@@ -214,6 +223,7 @@ class cA2CSolver(TestingSolver):
                 self.q_estimator.update_policy(batch_s, batch_r.reshape([-1, 1]), batch_a, batch_mask, self.params["learning_rate"],
                                           global_step2)
                 global_step2 += 1
+            self.log['time_batch'] += time.time() - time_batch
 
             self.saver.save(self.sess, os.path.join(self.log_dir,"{}_model{}.ckpt".format(self.solver_signature, n_iter)))
             if self.verbose:

@@ -153,30 +153,22 @@ class GymSolver(TestingSolver):
             onehot_nodeid[n] = 1
             if self.params['include_income_to_observation'] == 1:
                 assert self.test_env.include_income_to_observation
-                positions_for_income = 3*len(self.world)
-                assert state[:-positions_for_income].shape == ((2*len(self.world)+self.time_periods),)
+                positions_for_income = len(self.world)
+                assert state[:-positions_for_income].shape == ((3*len(self.world)+self.time_periods),)
                 assert state[-positions_for_income:].shape[0] == positions_for_income
-                assert self.train_env.observation_space.shape == (3*len(self.world)+self.time_periods+3,), (self.train_env.observation_space.shape, (3*len(self.world)+self.time_periods+3,))
-                if -positions_for_income+3*n+3 == 0:
-                    last = state[-positions_for_income+3*n:]
-                else:
-                    last = state[-positions_for_income+3*n:-positions_for_income+3*n+3]
-                obs = np.concatenate((state[:-positions_for_income], onehot_nodeid, last))
-                assert obs.shape[0] == 3*len(self.world)+self.time_periods+3
+                assert self.train_env.observation_space.shape == (4*len(self.world)+self.time_periods,)
+                obs = np.concatenate((state[:-positions_for_income], onehot_nodeid, state[-positions_for_income,:]))
+                assert obs.shape[0] == 4*len(self.world)+self.time_periods
             else:
                 assert not self.test_env.include_income_to_observation
-                assert state.shape == (2*len(self.world)+self.time_periods,), (state.shape, (2*len(self.world)+self.time_periods,))
+                assert state.shape == (3*len(self.world)+self.time_periods,)
                 obs = np.concatenate((state, onehot_nodeid))
-                assert obs.shape[0] == 3*len(self.world)+self.time_periods
+                assert obs.shape[0] == 4*len(self.world)+self.time_periods
 
             if self.params.get("lstm", 0) == 1:
                 raise NotImplementedError("The problem is how to combine last states of NN from different graph nodes")
-                action, _states = self.model.predict(obs, state=nn_state, mask=done)
             else:
                 action, _states = self.model.predict(obs)
             actions.append(action)
         actions = np.concatenate(actions)
         return actions
-
-    def load(self):
-        ...

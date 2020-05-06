@@ -71,12 +71,13 @@ class TestingSolver(Solver):
         self.world, self.idle_driver_locations, self.real_orders, \
             self.onoff_driver_locations, random_average, dist = gen.load_complete_set(dataset_id=self.params['dataset']['dataset_id'])
 
-    def run_test_episode(self, training_iter, draw=False):
+    def run_test_episode(self, training_iter, draw=False, debug=True):
         stats = {}
         t = time.time()
         randseed = np.random.randint(1,100000)
         stats['seed'] = float(randseed)
         self.test_env.seed(randseed)
+        self.test_env.DEBUG = debug
         state = self.test_env.reset()
         info = self.test_env.get_reset_info()
         done = False
@@ -140,7 +141,8 @@ class TestingSolver(Solver):
             pbar = tqdm(total=total_test_days, desc="Testing Solver")
 
         for day in range(total_test_days): # number of episodes
-            stats = self.run_test_episode(training_iteration, draw and day == 0) # plot first iteration only
+            # plot and check consistency only at first iteration to save time and space
+            stats = self.run_test_episode(training_iteration, draw and day == 0, day == 0) 
             # need to rereun all experiments in server to plot because current ones
             # are done with graph with missing coordinates
 
