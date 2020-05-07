@@ -55,7 +55,7 @@
     },
     "problem": {
       "wc": 0.1,
-      "testing_epochs": 100,
+      "testing_epochs": 50,
       "count_neighbors": 1
     },
     "full_rerun": 0
