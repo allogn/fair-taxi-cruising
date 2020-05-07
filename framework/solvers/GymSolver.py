@@ -156,9 +156,9 @@ class GymSolver(TestingSolver):
                 positions_for_income = len(self.world)
                 assert state[:-positions_for_income].shape == ((3*len(self.world)+self.time_periods),)
                 assert state[-positions_for_income:].shape[0] == positions_for_income
-                assert self.train_env.observation_space.shape == (4*len(self.world)+self.time_periods,)
+                assert self.train_env.observation_space.shape == (5*len(self.world)+self.time_periods,)
                 obs = np.concatenate((state[:-positions_for_income], onehot_nodeid, state[-positions_for_income,:]))
-                assert obs.shape[0] == 4*len(self.world)+self.time_periods
+                assert obs.shape[0] == 5*len(self.world)+self.time_periods
             else:
                 assert not self.test_env.include_income_to_observation
                 assert state.shape == (3*len(self.world)+self.time_periods,)
