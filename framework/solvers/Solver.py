@@ -26,7 +26,7 @@ class Solver:
         return {}
 
     def get_solver_signature(self):
-        return self.get_name() + ParameterManager.get_param_footprint(self.get_footprint_params())
+        return self.get_name()[:-6] + "_" + ParameterManager.get_param_footprint(self.get_footprint_params())
 
     def run(self, db_save_callback):
         if "mode" not in self.params or self.params["mode"] == "Train":

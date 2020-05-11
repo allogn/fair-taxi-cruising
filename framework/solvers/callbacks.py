@@ -58,6 +58,7 @@ class TensorboardCallback(BaseCallback):
     def __init__(self, verbose=0):
         self.is_tb_set = False
         super(TensorboardCallback, self).__init__(verbose)
+        self.episodes_recorded = set()
 
     def _on_step(self) -> bool:
         pass
@@ -75,7 +76,12 @@ class TensorboardCallback(BaseCallback):
             return True # on first rollouts it might happen that none of the environments have finished any of episodes
         # -1 because env is vectorized, and we take result only from the last env in the vector (can be any)
         
-        w.write(stats, self.rollout_calls)
+        # self.rollout_calls would be a wrong iteration id here, because there might be 
+        # many rollout calls before an episode is finished in one of the environments
+        episode_id = self.model.get_env().env_method("get_resets")[-1]
+        if episode_id not in self.episodes_recorded:
+            w.write(stats, episode_id)
+            self.episodes_recorded.add(episode_id)
         return True  
 
 

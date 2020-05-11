@@ -41,6 +41,7 @@ class TestGymSolver:
             "callback": 1,
             "draw": 0,
             "save_freq": 1,
+            "eval_freq": 1,
             "testing_epochs": 1,
             "training_iterations": 1000 # check testing while training
         }

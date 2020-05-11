@@ -19,18 +19,11 @@ class cA2CSolver(TestingSolver):
     def __init__(self, **params):
         t1 = time.time()
 
-        if params['include_income_to_observation'] == 0:
-            params['normalize_rewards'] = 1
-        else:
-            params['normalize_rewards'] = 0
-
         super().__init__(**params)
 
         self.sess = tf.Session()
         self.time_periods = self.params['dataset']["time_periods"]
-        self.log_dir = self.dpath
         self.load_dataset()
-        self.solver_signature = self.get_solver_signature()
         self.init_env()
         self.init()
         self.log['init_time'] = time.time() - t1
@@ -85,9 +78,8 @@ class cA2CSolver(TestingSolver):
         self.sess = tf.Session()
         tf.set_random_seed(np.random.randint(1,10000))
 
-        summary_dir = os.path.join(self.dpath, self.solver_signature)
         self.q_estimator = Estimator(self.sess, self.env.world, self.time_periods,
-                                        scope=self.solver_signature, summary_dir=summary_dir, wc=self.params["wc"],
+                                        scope=self.get_solver_signature(), summary_dir=self.log_dir, wc=self.params["wc"],
                                         include_income = self.params['include_income_to_observation'] == 1)
         self.stateprocessor = stateProcessor(self.q_estimator.action_dim, self.q_estimator.n_valid_grid, self.time_periods,
                                     self.params['include_income_to_observation'] == 1)
@@ -96,7 +88,7 @@ class cA2CSolver(TestingSolver):
         self.saver = tf.train.Saver(max_to_keep=5)
         if self.params.get('mode','Train') == "Test":
             iter = self.params["iterations"]-1 # load model of the last iteration
-            self.saver.restore(self.sess, os.path.join(self.log_dir,"{}_model{}.ckpt".format(self.solver_signature, iter)))
+            self.saver.restore(self.sess, os.path.join(self.log_dir,"{}_model{}.ckpt".format(self.get_solver_signature(), iter)))
         tf.reset_default_graph()
 
     def set_random_seed(self, seed):
@@ -225,7 +217,7 @@ class cA2CSolver(TestingSolver):
                 global_step2 += 1
             self.log['time_batch'] += time.time() - time_batch
 
-            self.saver.save(self.sess, os.path.join(self.log_dir,"{}_model{}.ckpt".format(self.solver_signature, n_iter)))
+            self.saver.save(self.sess, os.path.join(self.log_dir,"{}_model{}.ckpt".format(self.get_solver_signature(), n_iter)))
             if self.verbose:
                 pbar.update()
 

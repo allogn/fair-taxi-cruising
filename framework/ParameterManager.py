@@ -44,10 +44,11 @@ class ParameterManager:
     def populate_dic_rec(dic1, dic2):
         for key in dic2:
 
-            if (key == "solver" or key == "strategy") and (key in dic1): # do not add new solvers if they don't exist
-                for key2 in dic1[key]:
-                    if key2 in dic2[key]:
-                        ParameterManager.populate_dic_rec(dic1[key][key2], dic2[key][key2])
+            if key == "solver" and (key in dic1): # do not add new solvers if they don't exist
+                for solver in dic1[key]:
+                    if solver in dic2[key]:
+                        for solver_set_id in range(len(dic1["solver"][solver])):
+                            ParameterManager.populate_dic_rec(dic1["solver"][solver][solver_set_id], dic2["solver"][solver])
                 continue
 
             if key not in dic1:
@@ -81,21 +82,22 @@ class ParameterManager:
                             "No solver data to plot, or missing Solver column in df.")
         for problem_param_set in self.get_problem_param_sets():
             for solver_name in self.params["solver"]:
-                param_names = []
-                param_values = []
-                for solver_param in self.params["solver"][solver_name]:
-                    param_names.append(solver_param)
-                    a = self.params["solver"][solver_name][solver_param]
-                    param_values.append(a if isinstance(a, list) else [a])
-                all_solver_param_sets = product(*param_values)
-                for param_set in all_solver_param_sets:
-                    solver_case_dict = {'solver': solver_name}
-                    for i in range(len(param_names)):
-                        solver_case_dict[param_names[i]] = param_set[i]
-                    for k in problem_param_set:
-                        assert k not in solver_case_dict, "Problem and Solver params are overlapping"
-                    solver_case_dict.update(problem_param_set)
-                    sets.append(solver_case_dict)
+                for param_set in self.params["solver"][solver_name]:
+                    param_names = []
+                    param_values = []
+                    for solver_param in param_set:
+                        param_names.append(solver_param)
+                        a = param_set[solver_param]
+                        param_values.append(a if isinstance(a, list) else [a])
+                    all_solver_param_sets = product(*param_values)
+                    for param_set in all_solver_param_sets:
+                        solver_case_dict = {'solver': solver_name}
+                        for i in range(len(param_names)):
+                            solver_case_dict[param_names[i]] = param_set[i]
+                        for k in problem_param_set:
+                            assert k not in solver_case_dict, "Problem and Solver params are overlapping"
+                        solver_case_dict.update(problem_param_set)
+                        sets.append(solver_case_dict)
         return sets
 
     def get_defaults(self):
@@ -142,14 +144,17 @@ class ParameterManager:
 
     @staticmethod
     def get_abbr(s):
-        return "".join([word[0] for word in s.split("_")])
+        return "".join([word[:3].capitalize() for word in s.split("_")])
 
     @staticmethod
     def get_param_list_rec(params):
         s = []
         for key in params:
             if not isinstance(params[key], dict):
-                val = "%.4f" % params[key] if isinstance(params[key], float) else str(params[key])
+                if isinstance(params[key], bool):
+                    val = str(int(params[key]))
+                else:
+                    val = "%.4f" % params[key] if isinstance(params[key], float) else str(params[key])
                 s.append(ParameterManager.get_abbr(key) + val)
             else:
                 s += ParameterManager.get_param_list_rec(params[key])

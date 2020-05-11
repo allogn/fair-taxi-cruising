@@ -24,7 +24,6 @@ class GymSolver(TestingSolver):
     def __init__(self, **params):
         super().__init__(**params)
         self.Model = PPO2
-        self.solver_signature = "gym_" + ParameterManager.get_param_footprint(self.get_footprint_params())
 
         # parameters from our config, not the original one
         self.days = self.params['dataset']["days"]
@@ -52,7 +51,7 @@ class GymSolver(TestingSolver):
         # self.test_env_native = VecNormalize(self.test_env_native, norm_obs=False, norm_reward=False)
 
         self.model = self.Model(Policy, self.train_env, verbose=0, nminibatches=nminibatches, 
-                                tensorboard_log=os.path.join(self.dpath,self.solver_signature), 
+                                tensorboard_log=self.log_dir, 
                                 n_steps=self.params['dataset']['time_periods']+1)
 
     def get_footprint_params(self):
@@ -130,7 +129,7 @@ class GymSolver(TestingSolver):
         if self.params.get("callback", 0) == 1:
             return [
                 TensorboardCallback(),
-                TestingCallback(self, verbose=0, eval_freq=10, draw=self.params['draw'] == 1),
+                TestingCallback(self, verbose=0, eval_freq=self.params['eval_freq'], draw=self.params['draw'] == 1),
                 CheckpointCallback(save_freq=self.params['save_freq'], 
                                     save_path=self.log_dir, name_prefix='gymsave')]
         else:
@@ -141,7 +140,8 @@ class GymSolver(TestingSolver):
         if db_save_callback is not None:
             db_save_callback(self.log)
         t = time.time()
-        self.model.learn(total_timesteps=self.params['training_iterations'], callback=self.get_callback(db_save_callback))
+        self.model.learn(total_timesteps=self.params['training_iterations'], tb_log_name="",
+                        callback=self.get_callback(db_save_callback))
         self.log['training_time'] = time.time() - t
 
     def predict(self, state, info, nn_state = None):

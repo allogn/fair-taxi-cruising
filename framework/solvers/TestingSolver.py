@@ -25,7 +25,7 @@ class TestingSolver(Solver):
         # tf logging
         # self.artist = Artist()
         self.fm = FileManager(self.params['tag'])
-        self.log_dir = os.path.join(self.fm.get_data_path(),self.get_solver_signature())
+        self.log_dir = os.path.join(self.dpath,self.get_solver_signature())
         self.fm.create_path(self.log_dir)
         # tf.reset_default_graph()  # important! logging works weirdly otherwise, creates separate plots per iteration
         # # also important to reset before session, not after

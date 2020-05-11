@@ -122,12 +122,13 @@ class Experiment:
     def run_solver(solver_params, db_client):
         solver_name = solver_params["solver"]
         solver_params['seed'] = time.time() # must be here, not in the parent function. Otherwise solver lookup by params does not work.
+        
         Solver = eval(solver_name + "Solver")
         z = dict(solver_params)
         solver = Solver(**z)
 
         if threading.current_thread().name == 'MainThread':
-            logging.info("Starting {} of Solver {}".format(solver_params["mode"], solver_name))
+            logging.info("Starting {} of Solver {} ({})".format(solver_params["mode"], solver_name, solver_params["footprint"]))
             solver.verbose = True
 
         def db_insert_callback(result):
@@ -138,7 +139,10 @@ class Experiment:
             except Exception as e:
                 logging.error("Failed to save result: {}, Result: {}".format(e, result))
 
-        solver.run(db_insert_callback)
+        try:
+            solver.run(db_insert_callback)
+        except KeyboardInterrupt:
+            logging.info("Solver {} has been interrupted".format(solver_params["footprint"]))
         signal.alarm(0)
 
     def generate_solver_params(self, mode):
@@ -160,7 +164,7 @@ class Experiment:
                     all_params['footprint'] = ParameterManager.get_param_footprint(solver_params)
                     all_params['tag'] = self.tag
                     if self.db.solution.find_one(all_params) != None:
-                       logging.info("{} of {} for {} exists.".format(mode, solver_params['solver'], self.tag))
+                       logging.info("{} of {} for {} exists ({}).".format(mode, solver_params['solver'], self.tag, all_params['footprint']))
                        continue
                     if "rerun" in all_params:
                         del all_params['rerun']
@@ -168,6 +172,7 @@ class Experiment:
 
                     yield all_params
 
+        # test mode is deprecated, testing embedded in training
         if mode == "Test":
             q = {"tag": self.tag, "mode": "Train"}
             total_datasets = self.db.solution.count_documents(q)
@@ -178,7 +183,7 @@ class Experiment:
                 model_id = d['trained_model_id']
 
                 if self.db.solution.find_one({'trained_model_id': model_id, "mode": "Test"}) != None:
-                   logging.info("{} of {} for {} exists.".format(mode, d['solver'], self.tag))
+                   logging.info("{} of {} for {} exists ({}).".format(mode, d['solver'], self.tag, d['footprint']))
                    continue
 
                 all_params = d
@@ -195,7 +200,6 @@ class Experiment:
 
         self.all_solvers = []
         for all_params in self.generate_solver_params(mode):
-            # print(all_params)
             if Experiment.WORKERS_NUM == 1:
                 self.run_solver(all_params, self.db)
             else:
