@@ -13,10 +13,10 @@ class TestGymSolver:
         generator_params = {
             "dataset_type": "grid",
             "n": 4,
-            "time_periods": 2, # should work for any network
+            "time_periods": 10, # should work for any network
             "days": 2,
             "orders_density": 10,
-            "number_of_cars": 10,
+            "number_of_cars": 16,
             "order_distr": "star",
             "order_sampling_multiplier": 1
         }
@@ -38,8 +38,11 @@ class TestGymSolver:
             "minimum_reward": 0,
             "include_income_to_observation": 0,
             "num_cpu": 4,
-            "training_iterations": 1000, # check testing while training
-            "testing_epochs": 2
+            "callback": 1,
+            "draw": 0,
+            "save_freq": 1,
+            "testing_epochs": 1,
+            "training_iterations": 1000 # check testing while training
         }
 
         solver = GymSolver(**solver_params)
