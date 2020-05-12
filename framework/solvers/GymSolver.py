@@ -49,10 +49,9 @@ class GymSolver(TestingSolver):
         # testing not implemented so far
         # self.test_env_native = SubprocVecEnv([self.make_env(env_id, 1, seed+num_cpu+1, self.env_params)])
         # self.test_env_native = VecNormalize(self.test_env_native, norm_obs=False, norm_reward=False)
-
         self.model = self.Model(Policy, self.train_env, verbose=0, nminibatches=nminibatches, 
-                                tensorboard_log=self.log_dir, 
-                                n_steps=self.params['dataset']['time_periods']+1)
+                                tensorboard_log=self.log_dir, full_tensorboard_log=False,
+                                n_steps=self.params['dataset']['time_periods']*num_cpu)
 
     def get_footprint_params(self):
         footprint_params = {
