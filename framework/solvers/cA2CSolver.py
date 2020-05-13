@@ -28,7 +28,7 @@ class cA2CSolver(TestingSolver):
         self.init()
         self.log['init_time'] = time.time() - t1
 
-        self.summary_writer = tf.summary.FileWriter(self.log_dir)
+        self.stats_summary_writer = tf.summary.FileWriter(os.path.join(self.dpath,self.get_solver_signature() + "_stats"))
 
     def get_env_params(self):
         env_params = {
@@ -192,8 +192,9 @@ class cA2CSolver(TestingSolver):
                 loop_n += 1
 
             episode_info = self.env.get_episode_info()
-            w = EpisodeStatsLogger(self.summary_writer)
+            w = EpisodeStatsLogger(self.stats_summary_writer)
             w.write(episode_info, n_iter)
+            print(episode_info)
             self.log["time_rollout"] += time.time() - time_rollout
 
             # running tests

@@ -31,7 +31,13 @@ class TestingSolver(Solver):
         # # also important to reset before session, not after
 
         # self.sess = tf.Session()
-        self.test_tf_writer = tf.summary.FileWriter(self.log_dir)
+
+
+        # appearantly TB does not "like" several event files in the same directory,
+        # so testing should be in another dir (https://stackoverflow.com/questions/45890560/tensorflow-found-more-than-one-graph-event-per-run)
+        self.test_tf_writer = tf.summary.FileWriter(os.path.join(self.dpath,self.get_solver_signature() + "_test"))
+        
+        
         # self.epoch_stats = {}
         # self.summaries = None
         

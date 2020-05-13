@@ -51,7 +51,7 @@ class GymSolver(TestingSolver):
         # self.test_env_native = VecNormalize(self.test_env_native, norm_obs=False, norm_reward=False)
         self.model = self.Model(Policy, self.train_env, verbose=0, nminibatches=nminibatches, 
                                 tensorboard_log=self.log_dir, full_tensorboard_log=False,
-                                n_steps=self.params['dataset']['time_periods']*num_cpu)
+                                n_steps=(self.params['dataset']['time_periods']+1)*num_cpu)
 
     def get_footprint_params(self):
         footprint_params = {

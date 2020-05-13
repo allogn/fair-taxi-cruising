@@ -28,8 +28,8 @@ class EpisodeStatsLogger:
     
     def write(self, stats, step):
         values = []
-        if len(stats['rewards']) == 0:
-            return True
+        # if len(stats['rewards']) == 0:
+        #     return True
         for k, val in stats.items():
             if k == 'rewards':
                 assert len(val) > 0
@@ -50,6 +50,7 @@ class EpisodeStatsLogger:
                 values.append(tf.Summary.Value(tag="stats/" + k, simple_value=val))
         summary = tf.Summary(value=values)
         self.writer.add_summary(summary, step)
+        self.writer.flush()
 
 class TensorboardCallback(BaseCallback):
     """
@@ -72,16 +73,19 @@ class TensorboardCallback(BaseCallback):
         """
         w = EpisodeStatsLogger(self.locals['writer'])
         stats = self.model.get_env().env_method("get_episode_info")[-1] 
-        if stats == None:
-            return True # on first rollouts it might happen that none of the environments have finished any of episodes
         # -1 because env is vectorized, and we take result only from the last env in the vector (can be any)
+        if stats == None:
+            # on first rollouts it might happen that none of the environments have finished any of episodes
+            # but we don't allow this
+            raise Exception("n_steps is too small, first rollout completed wihout termination")
         
         # self.rollout_calls would be a wrong iteration id here, because there might be 
         # many rollout calls before an episode is finished in one of the environments
         episode_id = self.model.get_env().env_method("get_resets")[-1]
-        if episode_id not in self.episodes_recorded:
-            w.write(stats, episode_id)
-            self.episodes_recorded.add(episode_id)
+        # assert that solver is updated by a new episode (although several might have passed
+        assert episode_id not in self.episodes_recorded
+        w.write(stats, len(self.episodes_recorded))
+        self.episodes_recorded.add(episode_id)
         return True  
 
 
