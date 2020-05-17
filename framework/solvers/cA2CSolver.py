@@ -194,7 +194,6 @@ class cA2CSolver(TestingSolver):
             episode_info = self.env.get_episode_info()
             w = EpisodeStatsLogger(self.stats_summary_writer)
             w.write(episode_info, n_iter)
-            print(episode_info)
             self.log["time_rollout"] += time.time() - time_rollout
 
             # running tests
