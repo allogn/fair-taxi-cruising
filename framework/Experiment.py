@@ -143,6 +143,8 @@ class Experiment:
             solver.run(db_insert_callback)
         except KeyboardInterrupt:
             logging.info("Solver {} has been interrupted".format(solver_params["footprint"]))
+        except Exception as e:
+            logging.error("Solver {} terminated with exception {}".format(solver_params['footprint'], e))
         signal.alarm(0)
 
     def generate_solver_params(self, mode):
