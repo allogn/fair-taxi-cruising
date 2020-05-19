@@ -111,6 +111,7 @@ class Generator:
         dataset_info = self.generators[self.params['dataset_type']]()
         dataset_info["dataset_id"] = self.dataset_id
         dataset_info["tag"] = self.title
+        dataset_info["graph_size"] = len(self.G)
         dataset_info["dataset_path"] = self.data_path
         dataset_info.update(self.params)
         return dataset_info

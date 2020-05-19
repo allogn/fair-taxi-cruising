@@ -77,7 +77,7 @@ class TensorboardCallback(BaseCallback):
         if stats == None:
             # on first rollouts it might happen that none of the environments have finished any of episodes
             # but we don't allow this
-            raise Exception("n_steps is too small, first rollout completed wihout termination")
+            raise Exception("n_steps is too small, first rollout completed without termination")
         
         # self.rollout_calls would be a wrong iteration id here, because there might be 
         # many rollout calls before an episode is finished in one of the environments
