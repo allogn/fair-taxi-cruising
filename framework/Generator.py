@@ -117,6 +117,7 @@ class Generator:
         return dataset_info
 
     def generate_dummy(self, dummy_data_param):
+        self.G = nx.Graph()
         return {"dummy_data_param_received": dummy_data_param}
 
     def generate_linear(self, n):
