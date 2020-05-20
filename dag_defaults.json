@@ -36,7 +36,7 @@
         "poorest_first": 1,
         "callback": 1,
         "save_freq": 1000,
-        "eval_freq": 10,
+        "eval_freq": 1,
         "draw": 1
       },
       "No": {},
