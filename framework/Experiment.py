@@ -83,18 +83,22 @@ class Experiment:
     def generate_datasets(self, force=False):
         if force:
             self.db.dataset.delete_many({'tag': self.tag})
+
         if self.db.dataset.find_one({'tag': self.tag}) != None:
             logging.info("Dataset for {} has been found".format(self.tag))
             return 0
+
         total_datasets = list(self.pm.get_data_param_sets())
         if len(total_datasets) == 0:
             raise Exception("No datasets generated, bad parameter values")
+
         generated = 0
         for p in total_datasets:
             gen = Generator(self.tag, p)
             dataset_info = gen.generate()
             self.db.dataset.insert_one(dataset_info)
             generated += 1
+
         return generated
 
     def run_parallel(self):

@@ -237,6 +237,7 @@ class Generator:
     def get_random_average_orders(distr_type, density, G, n = None):
         random_average = None
         N = len(G)
+        assert N > 0
 
         if distr_type == "centered":
             assert(n is not None)
@@ -259,6 +260,7 @@ class Generator:
             random_average[N-1,0] = 0
 
         if distr_type == "star":
+            assert N >= 3
             x_lim = (10000000, -1)
             y_lim = (10000000, -1)
             for n in G.nodes(data=True):

@@ -37,7 +37,7 @@ class OrientedSolver(TestingSolver):
             raise Exception("Not Implemented")
 
     def train(self, db_save_callback = None):
-        self.run_tests(0, draw = True)
+        self.run_tests(0, draw = False)
 
     def predict(self, observation, info):
         action = np.zeros(self.test_env.get_action_space_shape())
