@@ -252,12 +252,10 @@ class Generator:
 
         if distr_type == "airport":
             random_average = np.zeros((N,N))
+            n = int(np.sqrt(N))
             random_average[0,:] = np.random.random((N,))*density
             random_average[N-1,:] = np.random.random((N,))*density
-            random_average[0,0] = 0
-            random_average[N-1,N-1] = 0
-            random_average[0,N-1] = 0
-            random_average[N-1,0] = 0
+            random_average[n-1,:] = np.random.random((N,))*density
 
         if distr_type == "star":
             assert N >= 3

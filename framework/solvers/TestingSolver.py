@@ -35,8 +35,10 @@ class TestingSolver(Solver):
 
         # appearantly TB does not "like" several event files in the same directory,
         # so testing should be in another dir (https://stackoverflow.com/questions/45890560/tensorflow-found-more-than-one-graph-event-per-run)
-        self.test_tf_writer = tf.summary.FileWriter(os.path.join(self.dpath,self.get_solver_signature() + "_test"))
-        
+        test_path = os.path.join(self.dpath,self.get_solver_signature() + "_test")
+        self.test_tf_writer = tf.summary.FileWriter(test_path)
+        self.log['log_dir'] = self.log_dir
+        self.log['log_dir_test'] = test_path
         
         # self.epoch_stats = {}
         # self.summaries = None
