@@ -149,7 +149,6 @@ class Estimator:
         :param s: 504 x stat_dim,
         :return:
         """
-
         value_output = self.sess.run(self.value_output, {self.state: s}).flatten()
         action_tuple = []
         valid_prob = []
@@ -319,7 +318,7 @@ class stateProcessor:
 
     @staticmethod
     def utility_conver_states(curr_state):
-        return np.array(curr_state).flatten()
+        return np.array(curr_state, dtype=float).flatten()
 
     @staticmethod
     def utility_normalize_states(curr_s, world_size):

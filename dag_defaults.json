@@ -15,7 +15,6 @@
     "solver": {
       "cA2C": {
         "iterations": 20,
-        "epsilon": 0.5,
         "gamma": 0.9,
         "learning_rate": 1e-3,
         "weight_poorest": 0,
@@ -59,5 +58,6 @@
       "testing_epochs": 20,
       "count_neighbors": 1
     },
-    "full_rerun": 1
+    "full_rerun": 1,
+    "DEBUG": 0
 }

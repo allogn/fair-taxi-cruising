@@ -141,7 +141,7 @@ class cA2CSolver(TestingSolver):
                 # INPUT: state,  OUTPUT: action
 
                 action_tuple, valid_action_prob_mat, policy_state, action_choosen_mat, \
-                curr_state_value, curr_neighbor_mask, next_state_ids = self.q_estimator.action(s_grid, context, self.params["epsilon"])
+                curr_state_value, curr_neighbor_mask, next_state_ids = self.q_estimator.action(s_grid, context, 0.5) # 0.5 is a legacy epsilon parameter, does nothing.
                 # context = merged driver locations + order locations
                 
                 new_action = self.action_from_valid_prob(valid_action_prob_mat)
@@ -153,7 +153,10 @@ class cA2CSolver(TestingSolver):
 
                 # Save transition to replay memory
                 if loop_n != 0 and policy_state_prev.shape[0] > 0:
-                    #not sure if it is valid to skip prev time intervals; zero is because there were no actions at prev step
+                    # policy_state_prev.shape[0] was not in original code, but corresponds to the case
+                    # when all drivers were matched and there are no instructions for idle drivers
+
+                    # not sure if it is valid to skip prev time intervals; zero is because there were no actions at prev step
                     # r1, c0
                     r_grid = self.stateprocessor.to_grid_rewards(immediate_reward)
 
@@ -167,6 +170,10 @@ class cA2CSolver(TestingSolver):
 
                     replay.add(state_mat_prev, action_mat_prev, targets_batch, s_grid)
                     policy_replay.add(policy_state_prev, action_choosen_mat_prev, advantage, curr_neighbor_mask_prev)
+                else:
+                    world_len = self.env.get_view_size()
+                    idle_drivers = s_grid[2*world_len:3*world_len]
+                    assert loop_n == 0 or np.sum(idle_drivers) == 0, idle_drivers
 
                 # for updating value network
                 state_mat_prev = s_grid
@@ -274,7 +281,7 @@ class cA2CSolver(TestingSolver):
         s_grid = self.stateprocessor.to_grid_states(normalized_curr_s, self.env.city_time)  # t0, s0
 
         context22 = self.stateprocessor.compute_context(context)
-        aa = self.q_estimator.action(s_grid, context22, self.params["epsilon"])
+        aa = self.q_estimator.action(s_grid, context22, 0.5) # 0.5 is a legacy parameter epsilon. does nothing. 
         dispatch_action = aa[0]
         return dispatch_action
 
@@ -285,10 +292,11 @@ class cA2CSolver(TestingSolver):
         curr_state, oldstyle_info, income_mat = self.observation_to_old_fashioned_info(state, info)
         context = self.stateprocessor.compute_context(oldstyle_info)
         curr_s = self.stateprocessor.utility_conver_states(curr_state) # [cars customers] flattened
-        s_grid = self.stateprocessor.to_grid_states(curr_s, self.env.time, income_mat)
+        normalized_curr_s = self.stateprocessor.utility_normalize_states(curr_s, len(self.world))
+        s_grid = self.stateprocessor.to_grid_states(normalized_curr_s, self.env.time, income_mat)
 
         action_tuple, valid_action_prob_mat, policy_state, action_choosen_mat, \
-            curr_state_value, curr_neighbor_mask, next_state_ids = self.q_estimator.action(s_grid, context, self.params["epsilon"])
+            curr_state_value, curr_neighbor_mask, next_state_ids = self.q_estimator.action(s_grid, context, 0.5) # 0.5 is a legacy parameter epsilon. does nothing. 
         new_action = self.action_from_valid_prob(valid_action_prob_mat)
         return new_action
 

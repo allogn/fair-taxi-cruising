@@ -39,6 +39,7 @@ class TestingSolver(Solver):
         self.test_tf_writer = tf.summary.FileWriter(test_path)
         self.log['log_dir'] = self.log_dir
         self.log['log_dir_test'] = test_path
+        self.log['log_dir_stats'] = os.path.join(self.dpath,self.get_solver_signature() + "_stats") # used for tensorboard logs during training
         
         # self.epoch_stats = {}
         # self.summaries = None

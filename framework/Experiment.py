@@ -69,6 +69,7 @@ class Experiment:
         self.db_wrapper = MongoDatabase(self.tag)
         self.db = self.db_wrapper.db
         self.fm = FileManager(self.tag)
+        self.DEBUG = parameters.get("DEBUG", False)
         if self.pm.get('full_rerun') == 1:
             self.clear()
             self.fm.clean_data_path()
@@ -123,7 +124,7 @@ class Experiment:
         t.close()
 
     @staticmethod
-    def run_solver(solver_params, db_client):
+    def run_solver(solver_params, db_client, DEBUG=False):
         solver_name = solver_params["solver"]
         solver_params['seed'] = time.time() # must be here, not in the parent function. Otherwise solver lookup by params does not work.
         
@@ -143,12 +144,16 @@ class Experiment:
             except Exception as e:
                 logging.error("Failed to save result: {}, Result: {}".format(e, result))
 
-        try:
+        if DEBUG:
             solver.run(db_insert_callback)
-        except KeyboardInterrupt:
-            logging.info("Solver {} has been interrupted".format(solver_params["footprint"]))
-        except Exception as e:
-            logging.error("Solver {} terminated with exception {}".format(solver_params['footprint'], e))
+        else:
+            try:
+                solver.run(db_insert_callback)
+            except KeyboardInterrupt:
+                logging.info("Solver {} has been interrupted".format(solver_params["footprint"]))
+            except Exception as e:
+                logging.error("Solver {} terminated with exception {}".format(solver_params['footprint'], e))
+
         signal.alarm(0)
 
     def generate_solver_params(self, mode):
@@ -169,10 +174,14 @@ class Experiment:
                     if solver_params.get("rerun",0) == 1:
                         q = {"tag": self.tag, "footprint": footprint}
                         solution = self.db.solution.find_one(q)
-                        self.fm.clean_path(solution['log_dir'])
-                        self.fm.clean_path(solution['log_dir_test'])
-                        self.db.solution.delete_many(q)
-                        logging.info("Solutions for footprint {} removed.".format(footprint))
+                        if solution is not None:
+                            self.fm.clean_path(solution['log_dir'])
+                            self.fm.clean_path(solution['log_dir_test'])
+                            self.fm.clean_path(solution['log_dir_stats'])
+                            self.db.solution.delete_many(q)
+                            logging.info("Solutions for footprint {} removed.".format(footprint))
+                        else:
+                            logging.info("Solutions for footprint {} was not found.".format(footprint))
 
                     all_params = deepcopy(solver_params)
                     all_params['dataset'] = d
@@ -217,7 +226,7 @@ class Experiment:
         self.all_solvers = []
         for all_params in self.generate_solver_params(mode):
             if Experiment.WORKERS_NUM == 1:
-                self.run_solver(all_params, self.db)
+                self.run_solver(all_params, self.db, self.DEBUG)
             else:
                 self.all_solvers.append(all_params)
 
