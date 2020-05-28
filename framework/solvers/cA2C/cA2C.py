@@ -2,6 +2,7 @@ import networkx as nx
 import numpy as np
 import tensorflow as tf
 import random, os, sys
+import logging
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 
 from alg_utility import *
@@ -438,6 +439,7 @@ class policyReplayMemory:
     def sample(self):
 
         if self.curr_lens <= self.batch_size:
+            logging.warning("Batch size is too large: no memory sampling performed.")
             return [self.states, self.actions, np.array(self.rewards), self.neighbor_mask]
         indices = random.sample(range(0, self.curr_lens), self.batch_size)
         batch_s = self.states[indices]

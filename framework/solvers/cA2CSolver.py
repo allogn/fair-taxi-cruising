@@ -96,8 +96,8 @@ class cA2CSolver(TestingSolver):
 
     def train(self, db_save_callback = None):
         t1 = time.time()
-        replay = ReplayMemory(memory_size=1e+6, batch_size=int(3e+3))
-        policy_replay = policyReplayMemory(memory_size=1e+6, batch_size=int(3e+3))
+        replay = ReplayMemory(memory_size=1e+6, batch_size=self.params['batch_size'])
+        policy_replay = policyReplayMemory(memory_size=1e+6, batch_size=self.params['batch_size'])
 
         save_random_seed = []
         global_step1 = 0

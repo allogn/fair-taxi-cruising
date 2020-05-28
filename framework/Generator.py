@@ -253,7 +253,7 @@ class Generator:
         if distr_type == "airport":
             random_average = np.zeros((N,N))
             n = int(np.sqrt(N))
-            random_average[0,:] = np.random.random((N,))*density
+            random_average[0,:] = np.random.random((N,))*density/2
             random_average[N-1,:] = np.random.random((N,))*density
             random_average[n-1,:] = np.random.random((N,))*density
 
