@@ -4,9 +4,10 @@ from collections import Counter
 import math
 from hilbertcurve.hilbertcurve import HilbertCurve
 
-from framework.solvers.TestingSolver import *
 from framework.solvers.cA2CSolver import *
 from framework.solvers.DiffSolver import *
+from framework.solvers.NoSolver import *
+from framework.solvers.GymSolver import *
 
 class SplitSolver(TestingSolver):
     def __init__(self, **params):
@@ -92,13 +93,6 @@ class SplitSolver(TestingSolver):
 
         return flow_per_edge_dict
 
-    def get_expected_drivers_per_supernode(self):
-        '''
-        Returns a vector of idle drivers in the next time step. Includes those who will arrive
-        due to customers + idle driver distribution in the current step
-        '''
-        ...
-
     def get_expected_orders_per_supernode(self):
         '''
         @return 
@@ -149,4 +143,25 @@ class SplitSolver(TestingSolver):
         ...
 
     def init_subsolvers(self):
-        ...
+        """
+        We should create subsolvers per each node.
+        Currently supported subsolvers: Diff
+
+        """
+        for n in self.superworld.nodes(data=True):
+            subsolver_params = {
+                "tag": self.params['tag'],
+                "wc": self.params["wc"],
+                "count_neighbors": self.params["count_neighbors"],
+                # parameters of environment
+                "weight_poorest": self.params["weight_poorest"],
+                "normalize_rewards": self.params["normalize_rewards"],
+                "minimum_reward": self.params["minimum_reward"],
+                "include_income_to_observation": self.params["include_income_to_observation"],
+                "poorest_first": self.params["poorest_first"],
+                # each environment loads a full dataset
+                "dataset": self.params["dataset"]
+            }
+            n[1]['solver'] = eval(self.params['subsolver'] + "Solver")(**subsolver_params)
+            n[1]['solver'].test_env.set_view(n[1]["nodes"])
+            # for some solvers we should take care and assert equality between test and train envs #TODO

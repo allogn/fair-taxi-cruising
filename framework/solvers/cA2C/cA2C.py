@@ -437,9 +437,9 @@ class policyReplayMemory:
             self.neighbor_mask[index:(index + new_sample_lens)] = mask
 
     def sample(self):
-
+        assert self.curr_lens > 0
         if self.curr_lens <= self.batch_size:
-            logging.warning("Batch size is too large: no memory sampling performed.")
+            logging.warning("Batch size is too large: no memory sampling performed. Batch size={}".format(self.curr_lens))
             return [self.states, self.actions, np.array(self.rewards), self.neighbor_mask]
         indices = random.sample(range(0, self.curr_lens), self.batch_size)
         batch_s = self.states[indices]
@@ -495,7 +495,6 @@ class ReplayMemory:
             self.next_states[index:(index + new_sample_lens)] = next_s
 
     def sample(self):
-
         if self.curr_lens <= self.batch_size:
             return [self.states, self.actions, self.rewards, self.next_states]
         indices = random.sample(range(0, self.curr_lens), self.batch_size)

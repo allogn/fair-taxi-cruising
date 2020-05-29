@@ -94,6 +94,131 @@ class cA2CSolver(TestingSolver):
     def set_random_seed(self, seed):
         pass
 
+    def do_iteration(self, n_iter, replay, policy_replay, save_random_seed, 
+                     db_save_callback, pbar, global_step1, global_step2):
+        RANDOM_SEED = n_iter + 40
+        self.env.seed(RANDOM_SEED)
+        save_random_seed.append(RANDOM_SEED)
+        batch_s, batch_a, batch_r = [], [], []
+        batch_reward_gmv = []
+
+        # reset env
+        observation = self.env.reset()
+        init_new_info = self.env.get_reset_info()
+        curr_state, info, income_mat = self.observation_to_old_fashioned_info(observation, init_new_info)
+        context = self.stateprocessor.compute_context(info)
+        curr_s = self.stateprocessor.utility_conver_states(curr_state) # [cars customers] flattened
+        # removed normalization from here
+        assert self.params['include_income_to_observation'] == 1 or income_mat == None
+
+        s_grid = self.stateprocessor.to_grid_states(curr_s, self.env.time, income_mat)  # add one-hot encoding of time, grid_id and curr_s global
+
+        # s_grid has income from by to_grid_states
+
+        # record rewards to update the value table
+        done = False
+        loop_n = 0
+        time_rollout = time.time()
+        while not done:
+            # record_curr_state.append(curr_state)
+            # INPUT: state,  OUTPUT: action
+
+            action_tuple, valid_action_prob_mat, policy_state, action_choosen_mat, \
+            curr_state_value, curr_neighbor_mask, next_state_ids = self.q_estimator.action(s_grid, context, 0.5) # 0.5 is a legacy epsilon parameter, does nothing.
+            # context = merged driver locations + order locations
+            
+            new_action = self.action_from_valid_prob(valid_action_prob_mat)
+            observation, new_reward, done, new_info = self.env.step(new_action)
+            assert new_info['unmasked_penalty'] == 0
+            
+            next_state, info, income_mat = self.observation_to_old_fashioned_info(observation, new_info)
+            # immediate_reward = self.stateprocessor.reward_wrapper(info, curr_s) -- outdated, do not count neighbors, env provide averaging inside
+            immediate_reward = new_info['reward_per_node']
+
+            # Save transition to replay memory
+            if loop_n != 0 and policy_state_prev.shape[0] > 0:
+                # policy_state_prev.shape[0] was not in original code, but corresponds to the case
+                # when all drivers were matched and there are no instructions for idle drivers
+
+                # not sure if it is valid to skip prev time intervals; zero is because there were no actions at prev step
+                # r1, c0
+                r_grid = self.stateprocessor.to_grid_rewards(immediate_reward)
+
+                # s0, a0, r1  for value newtwork
+                targets_batch = self.q_estimator.compute_targets(action_mat_prev, s_grid, r_grid, self.params["gamma"])
+
+
+                # advantage for policy network.
+                advantage = self.q_estimator.compute_advantage(curr_state_value_prev, next_state_ids_prev,
+                                                            s_grid, r_grid, self.params["gamma"])
+
+                replay.add(state_mat_prev, action_mat_prev, targets_batch, s_grid)
+                policy_replay.add(policy_state_prev, action_choosen_mat_prev, advantage, curr_neighbor_mask_prev)
+            else:
+                world_len = self.env.get_view_size()
+                idle_drivers = s_grid[2*world_len:3*world_len]
+                assert loop_n == 0 or np.sum(idle_drivers) == 0, idle_drivers
+
+            # for updating value network
+            state_mat_prev = s_grid
+            action_mat_prev = valid_action_prob_mat
+
+            # for updating policy net
+            action_choosen_mat_prev = action_choosen_mat
+            curr_neighbor_mask_prev = curr_neighbor_mask
+            policy_state_prev = policy_state
+            # for computing advantage
+            curr_state_value_prev = curr_state_value
+            next_state_ids_prev = next_state_ids
+
+            # s1
+            curr_state = next_state
+            curr_s = self.stateprocessor.utility_conver_states(next_state)
+            normalized_curr_s = self.stateprocessor.utility_normalize_states(curr_s, len(self.world))
+            s_grid = self.stateprocessor.to_grid_states(normalized_curr_s, self.env.time, income_mat)  # t0, s0
+
+            # c1
+            context = self.stateprocessor.compute_context(info)
+            batch_reward_gmv.append(new_reward)
+            loop_n += 1
+
+        episode_info = self.env.get_episode_info()
+        w = EpisodeStatsLogger(self.stats_summary_writer)
+        w.write(episode_info, n_iter)
+        self.log["time_rollout"] += time.time() - time_rollout
+
+        # running tests
+        time_tests = time.time()
+        self.run_tests(n_iter+1, draw=self.params['draw'] == 1, verbose=0)
+        self.log["time_tests"] += time.time() - time_tests
+
+        time_batch = time.time()
+        # update value network
+        for _ in np.arange(self.params['batch_size']):
+            batch_s, _, batch_r, _ = replay.sample()
+            iloss = self.q_estimator.update_value(batch_s, batch_r, self.params['learning_rate'], global_step1)
+            global_step1 += 1
+
+        # training method 2
+        # update policy network
+        for _ in np.arange(self.params['batch_size']):
+            batch_s, batch_a, batch_r, batch_mask = policy_replay.sample()
+            self.q_estimator.update_policy(batch_s, batch_r.reshape([-1, 1]), batch_a, batch_mask, self.params["learning_rate"],
+                                        global_step2)
+            global_step2 += 1
+        self.log['time_batch'] += time.time() - time_batch
+
+        self.saver.save(self.sess, os.path.join(self.log_dir,"{}_model{}.ckpt".format(self.get_solver_signature(), n_iter)))
+        if self.verbose:
+            pbar.update()
+
+        if db_save_callback is not None:
+            self.log["n_iter"] = int(n_iter)
+            db_save_callback(self.log)
+        self.save()
+
+        return global_step1, global_step2
+
     def train(self, db_save_callback = None):
         t1 = time.time()
         replay = ReplayMemory(memory_size=1e+6, batch_size=self.params['batch_size'])
@@ -112,126 +237,10 @@ class cA2CSolver(TestingSolver):
 
         if self.verbose:
             pbar = tqdm(total=self.params["iterations"], desc="Training cA2C (iters)")
+
         for n_iter in np.arange(self.params["iterations"]):
-            RANDOM_SEED = n_iter + 40
-            self.env.seed(RANDOM_SEED)
-            save_random_seed.append(RANDOM_SEED)
-            batch_s, batch_a, batch_r = [], [], []
-            batch_reward_gmv = []
-
-            # reset env
-            observation = self.env.reset()
-            init_new_info = self.env.get_reset_info()
-            curr_state, info, income_mat = self.observation_to_old_fashioned_info(observation, init_new_info)
-            context = self.stateprocessor.compute_context(info)
-            curr_s = self.stateprocessor.utility_conver_states(curr_state) # [cars customers] flattened
-            # removed normalization from here
-            assert self.params['include_income_to_observation'] == 1 or income_mat == None
-
-            s_grid = self.stateprocessor.to_grid_states(curr_s, self.env.time, income_mat)  # add one-hot encoding of time, grid_id and curr_s global
-
-            # s_grid has income from by to_grid_states
-
-            # record rewards to update the value table
-            done = False
-            loop_n = 0
-            time_rollout = time.time()
-            while not done:
-                # record_curr_state.append(curr_state)
-                # INPUT: state,  OUTPUT: action
-
-                action_tuple, valid_action_prob_mat, policy_state, action_choosen_mat, \
-                curr_state_value, curr_neighbor_mask, next_state_ids = self.q_estimator.action(s_grid, context, 0.5) # 0.5 is a legacy epsilon parameter, does nothing.
-                # context = merged driver locations + order locations
-                
-                new_action = self.action_from_valid_prob(valid_action_prob_mat)
-                observation, new_reward, done, new_info = self.env.step(new_action)
-                
-                next_state, info, income_mat = self.observation_to_old_fashioned_info(observation, new_info)
-                # immediate_reward = self.stateprocessor.reward_wrapper(info, curr_s) -- outdated, do not count neighbors, env provide averaging inside
-                immediate_reward = new_info['reward_per_node']
-
-                # Save transition to replay memory
-                if loop_n != 0 and policy_state_prev.shape[0] > 0:
-                    # policy_state_prev.shape[0] was not in original code, but corresponds to the case
-                    # when all drivers were matched and there are no instructions for idle drivers
-
-                    # not sure if it is valid to skip prev time intervals; zero is because there were no actions at prev step
-                    # r1, c0
-                    r_grid = self.stateprocessor.to_grid_rewards(immediate_reward)
-
-                    # s0, a0, r1  for value newtwork
-                    targets_batch = self.q_estimator.compute_targets(action_mat_prev, s_grid, r_grid, self.params["gamma"])
-
-
-                    # advantage for policy network.
-                    advantage = self.q_estimator.compute_advantage(curr_state_value_prev, next_state_ids_prev,
-                                                              s_grid, r_grid, self.params["gamma"])
-
-                    replay.add(state_mat_prev, action_mat_prev, targets_batch, s_grid)
-                    policy_replay.add(policy_state_prev, action_choosen_mat_prev, advantage, curr_neighbor_mask_prev)
-                else:
-                    world_len = self.env.get_view_size()
-                    idle_drivers = s_grid[2*world_len:3*world_len]
-                    assert loop_n == 0 or np.sum(idle_drivers) == 0, idle_drivers
-
-                # for updating value network
-                state_mat_prev = s_grid
-                action_mat_prev = valid_action_prob_mat
-
-                # for updating policy net
-                action_choosen_mat_prev = action_choosen_mat
-                curr_neighbor_mask_prev = curr_neighbor_mask
-                policy_state_prev = policy_state
-                # for computing advantage
-                curr_state_value_prev = curr_state_value
-                next_state_ids_prev = next_state_ids
-
-                # s1
-                curr_state = next_state
-                curr_s = self.stateprocessor.utility_conver_states(next_state)
-                normalized_curr_s = self.stateprocessor.utility_normalize_states(curr_s, len(self.world))
-                s_grid = self.stateprocessor.to_grid_states(normalized_curr_s, self.env.time, income_mat)  # t0, s0
-
-                # c1
-                context = self.stateprocessor.compute_context(info)
-                batch_reward_gmv.append(new_reward)
-                loop_n += 1
-
-            episode_info = self.env.get_episode_info()
-            w = EpisodeStatsLogger(self.stats_summary_writer)
-            w.write(episode_info, n_iter)
-            self.log["time_rollout"] += time.time() - time_rollout
-
-            # running tests
-            time_tests = time.time()
-            self.run_tests(n_iter+1, draw=self.params['draw'] == 1, verbose=0)
-            self.log["time_tests"] += time.time() - time_tests
-
-            time_batch = time.time()
-            # update value network
-            for _ in np.arange(self.params['batch_size']):
-                batch_s, _, batch_r, _ = replay.sample()
-                iloss = self.q_estimator.update_value(batch_s, batch_r, 1e-3, global_step1)
-                global_step1 += 1
-
-            # training method 2
-            # update policy network
-            for _ in np.arange(self.params['batch_size']):
-                batch_s, batch_a, batch_r, batch_mask = policy_replay.sample()
-                self.q_estimator.update_policy(batch_s, batch_r.reshape([-1, 1]), batch_a, batch_mask, self.params["learning_rate"],
-                                          global_step2)
-                global_step2 += 1
-            self.log['time_batch'] += time.time() - time_batch
-
-            self.saver.save(self.sess, os.path.join(self.log_dir,"{}_model{}.ckpt".format(self.get_solver_signature(), n_iter)))
-            if self.verbose:
-                pbar.update()
-
-            if db_save_callback is not None:
-                self.log["n_iter"] = int(n_iter)
-                db_save_callback(self.log)
-            self.save()
+            global_step1, global_step2 = self.do_iteration(n_iter, replay, policy_replay, save_random_seed, db_save_callback, pbar,
+                                                            global_step1, global_step2)
 
         if self.verbose:
             pbar.close()

@@ -49,7 +49,14 @@ class GymSolver(TestingSolver):
         # testing not implemented so far
         # self.test_env_native = SubprocVecEnv([self.make_env(env_id, 1, seed+num_cpu+1, self.env_params)])
         # self.test_env_native = VecNormalize(self.test_env_native, norm_obs=False, norm_reward=False)
-        self.model = self.Model(Policy, self.train_env, verbose=0, nminibatches=nminibatches, 
+        policy_params=[0, dict(pi=[128, 64, 32], vf=[128, 64, 32])] # 0 - shared layers
+        self.model = self.Model(Policy, self.train_env,
+                                gamma=self.params['gamma'], ent_coef=self.params['ent_coef'],
+                                learning_rate=self.params['learning_rate'], vf_coef=self.params['vf_coef'],
+                                max_grad_norm=self.params['max_grad_norm'], lam=self.params['lam'],
+                                noptepochs=self.params['noptepochs'], cliprange=self.params['cliprange'],
+                                seed=seed, verbose=0, nminibatches=nminibatches, 
+                                policy_kwargs={"net_arch": policy_params},
                                 tensorboard_log=self.log_dir, full_tensorboard_log=False,
                                 n_steps=self.params['dataset']['time_periods']*self.params['dataset']['graph_size'])
 

@@ -54,5 +54,31 @@ class TestSplitSolver:
                 assert flow >= 0
                 s[source] -= flow
                 s[dest] += flow
-        assert np.sum(s) == np.sum(idle_drivers), s
-        assert s[1] == 0 and s[3] == 0 and s[0] > 1 and s[2] > 1 and s[4] > 1, s
+        assert np.sum(s) == np.sum(idle_drivers), (s, flow_per_edge)
+        assert s[1] == 0 and s[3] == 0 and s[0] > 1 and s[2] > 1 and s[4] > 1, (s, flow_per_edge)
+
+        # test non-complete graph
+        # ...
+
+    def test_init_solvers(self):
+        # create simple environment
+        gen = Generator("test")
+        graph_info = gen.generate()
+        params = {
+            "dataset": graph_info,
+            "wc": 0,
+            "iterations": 2,
+            "tag": "test",
+            "count_neighbors": 1,
+            "weight_poorest": 0,
+            "normalize_rewards": 1,
+            "minimum_reward": 0,
+            "poorest_first": 1,
+            "include_income_to_observation": 0,
+            "testing_epochs": 2,
+            "draw": 0,
+            "shrinking_fraction": 0.9,
+            "subsolver": "Diff"
+        }
+        solv = SplitSolver(**params)
+        solv.init_subsolvers()

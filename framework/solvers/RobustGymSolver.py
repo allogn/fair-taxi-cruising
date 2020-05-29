@@ -1,6 +1,8 @@
 import os, sys
 
 from framework.solvers.GymSolver import GymSolver
+from framework.solvers.cA2CSolver import cA2CSolver
+from framework.solvers.cA2C.cA2C import *
 
 from copy import deepcopy
 from random import randint
@@ -10,81 +12,90 @@ from tqdm import tqdm
 import time
 import logging
 
-best_robust_reward, robust_threshold = -np.inf, 0
-
-class RobustGymSolver(GymSolver):
+class RobustGymSolver(cA2CSolver):
     def __init__(self, **params):
         super().__init__(**params)
-        self.solver_signature = 'robust' + self.solver_signature
 
-    def estimate_reward(self):
-        tot_reward = []
-        for i in range(3): # averaging over runs
-            randseed = np.random.randint(1,100000)
-            self.testing_env.seed(randseed)
-            state = self.testing_env.reset()
-            info = self.testing_env.get_reset_info()
-            done = False
-            it = 0
-            order_response_rates = []
-            nodes_with_drivers = []
-            rewards = []
-            while not done:
-                action = self.predict(state, info)
-                state, reward, done, info = self.testing_env.step(action)
-                it += 1
-                rewards.append(reward)
-            tot_reward.append(np.sum(rewards))
-        return np.mean(tot_reward)
+    def get_solver_signature(self):
+        return "Robust" + super().get_solver_signature()
+
+    def find_c(self, training_iteration):
+        best_robust_reward, robust_threshold = -np.inf, 0
+        gamma = 0.3
+        cmin = 0
+        cmax = 100
+        epsilon = 0.01 # absolute reward error
+        nu = 0.05
+
+        c = (cmax + cmin) / 2
+        steps_log = []
+        while abs((cmax + cmin)/2 - cmin) > epsilon:
+            self.test_env.set_income_bound(c)
+            stats = self.run_test_episode(training_iteration, draw=False, debug=False) 
+            reward = np.sum(stats['rewards'])
+            if self.DEBUG:
+                logging.info("Trying c={}. Reward {}".format(c, reward))
+            best_robust_reward = max(best_robust_reward, reward)
+
+            robust_threshold = c * self.test_env.n_drivers * (1 - nu)
+            possible = reward > c * self.test_env.n_drivers * (1 - nu)
+            steps_log.append((c, reward - c * self.test_env.n_drivers * (1 - nu)))
+            if possible:
+                cmin = cmin + (c - cmin) * gamma
+                c = (cmax + cmin) / 2
+                if self.DEBUG:
+                    logging.info("Possible. reward {}, thsh {}, gap {}".format(reward, robust_threshold, steps_log[-1][1]))
+            else:
+                cmax = cmax - (cmax - c) * gamma
+                c = (cmax + cmin) / 2
+                if self.DEBUG:
+                    logging.info("Impossible. reward {}, thsh {}, gap {}".format(reward, robust_threshold, steps_log[-1][1]))
+
+            if self.DEBUG:
+                logging.info("Finished iteration with cmin, cmax, delta {}".format((cmin, cmax, cmax - cmin)))
+
+        # if self.DEBUG:
+        logging.info("Finishing with final c {}".format(c))
+        steps_log = sorted(steps_log)
+
+        if self.DEBUG:
+            for x in steps_log:
+                print("{:10.4f}:{}".format(x[0], 1 if x[1] > 0 else 0))
+
+        return c
+
 
     def train(self, db_save_callback = None):
         t1 = time.time()
+        replay = ReplayMemory(memory_size=1e+6, batch_size=self.params['batch_size'])
+        policy_replay = policyReplayMemory(memory_size=1e+6, batch_size=self.params['batch_size'])
 
-        gamma = 0.95
-        cmin = -100000
-        cmax = 100000
-        epsilon = 1
-        nu = 0.05
-        best_solution = cmax
-        global best_robust_reward, robust_threshold
-        nminibatches = 4
-        num_cpu = self.params['num_cpu']
+        save_random_seed = []
+        income_bounds = []
+        global_step1 = 0
+        global_step2 = 0
 
+        self.log['time_batch'] = 0
+        self.log['time_rollout'] = 0
+        self.log['time_tests'] = 0
 
-        c = (cmax + cmin) / 3
-        while abs((cmax + cmin)/3 - cmin) > epsilon:
-            logging.info("Trying c={}".format(c))
-            self.testing_env.set_income_bound(c)
-            env = self.model.get_env()
-            env.env_method("set_income_bound", (c))
+        # do preliminary test run
+        self.run_tests(0, draw=self.params['draw'] == 1, verbose=0)
 
-            self.model = self.Model(MlpPolicy, self.train_env, verbose=0, nminibatches=4, tensorboard_log=os.path.join(self.dpath,self.solver_signature), n_steps=self.params['dataset']['time_periods']+1)
-            self.model.learn(total_timesteps=self.params['training_iterations'])
+        if self.verbose:
+            pbar = tqdm(total=self.params["iterations"], desc="Training cA2C (iters)")
 
-            reward = self.estimate_reward()
-            robust_threshold = c * self.testing_env.n_drivers * (1 - nu)
-            possible = reward > c * self.testing_env.n_drivers * (1 - nu)
-            logging.info("Initial possible: {} (reward {}, threshold {})".format(possible, reward, robust_threshold))
-            while possible:
-                cmin = cmin + (c - cmin) * gamma
-                c = (cmax + cmin) / 3
-                logging.info("Updating c -> {}".format(c))
-                reward = self.estimate_reward()
-                possible = reward > c * self.testing_env.n_drivers * (1 - nu)
-                logging.info("New reward {}, still possible? {}".format(reward, possible))
-            else:
-                cmax = c
-                c = (cmax + cmin) / 3
-                logging.info("Impossible, decreasing c.".format(c))
+        for n_iter in np.arange(self.params["iterations"]):
+            global_step1, global_step2 = self.do_iteration(n_iter, replay, policy_replay, save_random_seed, db_save_callback, pbar,
+                                                            global_step1, global_step2)
+            c = self.find_c(n_iter)
+            income_bounds.append(c)
+            self.env.set_income_bound(c)
 
-            logging.info("Finished iteration with cmin, cmax, delta {}".format((cmin, cmax, cmax - cmin)))
+        if self.verbose:
+            pbar.close()
 
-        logging.info("Finishing with final c")
-        self.model.learn(total_timesteps=self.params['training_iterations'])
-
-        reward = self.estimate_reward()
-        possible = reward > c * self.testing_env.n_drivers * (1 - nu)
-        logging.info("Final check possible? {} (reward {})".format(possible, reward))
-
-        self.log["best_c"] = c
         self.log['train_time'] = time.time() - t1
+        self.log['income_bounds'] = [float(c) for c in income_bounds]
+
+        
