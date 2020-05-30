@@ -160,7 +160,9 @@ class SplitSolver(TestingSolver):
                 "include_income_to_observation": self.params["include_income_to_observation"],
                 "poorest_first": self.params["poorest_first"],
                 # each environment loads a full dataset
-                "dataset": self.params["dataset"]
+                "dataset": self.params["dataset"],
+                "seed": self.params["seed"],
+                "debug": self.params["debug"]
             }
             n[1]['solver'] = eval(self.params['subsolver'] + "Solver")(**subsolver_params)
             n[1]['solver'].test_env.set_view(n[1]["nodes"])

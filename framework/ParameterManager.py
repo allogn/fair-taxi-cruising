@@ -17,9 +17,9 @@ class ParameterManager:
     '''
 
     def __init__(self, params = {}, load_defaults = True):
-        default_params = self.load_defaults()
         self.params = copy.deepcopy(params)
         if load_defaults:
+            default_params = self.load_defaults()
             self.populate_dic_rec(self.params, default_params)
         self.fm = FileManager(self.params.get("tag", "untitled"))
 
@@ -61,7 +61,10 @@ class ParameterManager:
         sets = []
         defaults = self.get_defaults()['data']
         for s in self.generate_sets_rec(self.get("data"), defaults):
-            sets.append(s)
+            s2 = copy.deepcopy(s)
+            s2['seed'] = self.params['seed']
+            sets.append(s2)
+        defaults['seed'] = self.params['seed']
         sets.append(defaults)
         return sets
 

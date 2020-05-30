@@ -50,6 +50,11 @@
       "Diff": {},
       "Oriented": {},
       "RobustGym": {
+        "robust_gamma": 0.3,
+        "cmin": 0,
+        "cmax": 10000,
+        "robust_epsilon": 0.1,
+        "robust_nu": 0.1,
         "iterations": 20,
         "gamma": 0.9,
         "learning_rate": 1e-3,
@@ -78,5 +83,6 @@
       "count_neighbors": 1
     },
     "full_rerun": 1,
-    "DEBUG": 0
+    "DEBUG": 0,
+    "seed": 123
 }

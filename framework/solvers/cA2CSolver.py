@@ -44,7 +44,9 @@ class cA2CSolver(TestingSolver):
             "minimum_reward": self.params['minimum_reward'] == 1,
             "include_income_to_observation": self.params['include_income_to_observation'] == 1,
             "poorest_first": self.params.get("poorest_first", 0) == 1,
-            "idle_reward": self.params.get("idle_reward", 0) == 1
+            "idle_reward": self.params.get("idle_reward", 0) == 1,
+            "seed": self.params['seed']+1,
+            "debug": self.params['debug']
         }
         return env_params
 
@@ -76,9 +78,9 @@ class cA2CSolver(TestingSolver):
         self.sess.close()
 
         self.sess = tf.Session()
-        tf.set_random_seed(np.random.randint(1,10000))
+        tf.set_random_seed(self.params['seed'])
 
-        self.q_estimator = Estimator(self.sess, self.env.world, self.time_periods,
+        self.q_estimator = Estimator(self.sess, self.env.world, self.time_periods, self.params['seed'],
                                         scope=self.get_solver_signature(), summary_dir=self.log_dir, wc=self.params["wc"],
                                         include_income = self.params['include_income_to_observation'] == 1)
         self.stateprocessor = stateProcessor(self.q_estimator.action_dim, self.q_estimator.n_valid_grid, self.time_periods,
@@ -91,14 +93,9 @@ class cA2CSolver(TestingSolver):
             self.saver.restore(self.sess, os.path.join(self.log_dir,"{}_model{}.ckpt".format(self.get_solver_signature(), iter)))
         tf.reset_default_graph()
 
-    def set_random_seed(self, seed):
-        pass
-
-    def do_iteration(self, n_iter, replay, policy_replay, save_random_seed, 
+    def do_iteration(self, n_iter, replay, policy_replay, seed, 
                      db_save_callback, pbar, global_step1, global_step2):
-        RANDOM_SEED = n_iter + 40
-        self.env.seed(RANDOM_SEED)
-        save_random_seed.append(RANDOM_SEED)
+        self.env.seed(seed)
         batch_s, batch_a, batch_r = [], [], []
         batch_reward_gmv = []
 
@@ -224,7 +221,6 @@ class cA2CSolver(TestingSolver):
         replay = ReplayMemory(memory_size=1e+6, batch_size=self.params['batch_size'])
         policy_replay = policyReplayMemory(memory_size=1e+6, batch_size=self.params['batch_size'])
 
-        save_random_seed = []
         global_step1 = 0
         global_step2 = 0
 
@@ -237,9 +233,12 @@ class cA2CSolver(TestingSolver):
 
         if self.verbose:
             pbar = tqdm(total=self.params["iterations"], desc="Training cA2C (iters)")
+        else:
+            pbar = None
 
         for n_iter in np.arange(self.params["iterations"]):
-            global_step1, global_step2 = self.do_iteration(n_iter, replay, policy_replay, save_random_seed, db_save_callback, pbar,
+            seed = self.params['seed'] + n_iter + 123
+            global_step1, global_step2 = self.do_iteration(n_iter, replay, policy_replay, seed, db_save_callback, pbar,
                                                             global_step1, global_step2)
 
         if self.verbose:

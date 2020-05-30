@@ -21,11 +21,11 @@ class RobustGymSolver(cA2CSolver):
 
     def find_c(self, training_iteration):
         best_robust_reward, robust_threshold = -np.inf, 0
-        gamma = 0.3
-        cmin = 0
-        cmax = 100
-        epsilon = 0.01 # absolute reward error
-        nu = 0.05
+        gamma = self.params["robust_gamma"]
+        cmin = self.params["cmin"]
+        cmax = self.params["cmax"]
+        epsilon = self.params["robust_epsilon"] # absolute reward error
+        nu = self.params["robust_nu"]
 
         c = (cmax + cmin) / 2
         steps_log = []
@@ -70,7 +70,6 @@ class RobustGymSolver(cA2CSolver):
         replay = ReplayMemory(memory_size=1e+6, batch_size=self.params['batch_size'])
         policy_replay = policyReplayMemory(memory_size=1e+6, batch_size=self.params['batch_size'])
 
-        save_random_seed = []
         income_bounds = []
         global_step1 = 0
         global_step2 = 0
@@ -86,7 +85,8 @@ class RobustGymSolver(cA2CSolver):
             pbar = tqdm(total=self.params["iterations"], desc="Training cA2C (iters)")
 
         for n_iter in np.arange(self.params["iterations"]):
-            global_step1, global_step2 = self.do_iteration(n_iter, replay, policy_replay, save_random_seed, db_save_callback, pbar,
+            seed = self.params['seed'] + n_iter + 123
+            global_step1, global_step2 = self.do_iteration(n_iter, replay, policy_replay, seed, db_save_callback, pbar,
                                                             global_step1, global_step2)
             c = self.find_c(n_iter)
             income_bounds.append(c)

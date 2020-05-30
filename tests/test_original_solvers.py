@@ -13,7 +13,8 @@ class TestOrigSolvers:
             "days": 1,
             "orders_density": 0.1,
             "number_of_cars": 2,
-            "order_distr": "uniform"
+            "order_distr": "uniform",
+            "seed": 0
         }
 
         gen = Generator("testOrigSolvers", generator_params)

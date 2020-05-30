@@ -1,10 +1,11 @@
 import unittest
+import numpy as np
 from framework.Generator import *
 
 class TestGenerator(unittest.TestCase):
 
     def setUp(self):
-        pass
+        self.random = np.random.RandomState(12345)
 
     def test_star_distribution(self):
         n = 5
@@ -14,7 +15,7 @@ class TestGenerator(unittest.TestCase):
             G.nodes[n]['coords'] = (n[0], n[1])
         G = nx.convert_node_labels_to_integers(G)
 
-        star_average = Generator.get_random_average_orders("star", 0.5, G)
+        star_average = Generator.get_random_average_orders("star", 0.5, G, self.random)
         # 0  1  2  3  4
         # 5  6  7  8  9
         # 10 11 12 13 14
@@ -33,7 +34,7 @@ class TestGenerator(unittest.TestCase):
         G.add_edges_from([(0,1),(1,2),(2,3),(3,4)])
         for n in G.nodes():
             G.nodes[n]['coords'] = (n, 0)
-        star_average = Generator.get_random_average_orders("star", 0.45, G)
+        star_average = Generator.get_random_average_orders("star", 0.45, G, self.random)
         result = np.zeros((5, 5))
         result[0, 2] = 0.45
         result[4, 2] = 0.45
@@ -45,7 +46,8 @@ class TestGenerator(unittest.TestCase):
             "dataset_type": "chicago",
             "days": 10,
             "sparsity": 1,
-            "driver_sampling_multiplier": 1
+            "driver_sampling_multiplier": 1,
+            "seed": 0
         }
         gen = Generator("testChicago", params_original)
         gen.generate()
@@ -55,7 +57,8 @@ class TestGenerator(unittest.TestCase):
               "dataset_type": "chicago",
               "days": 10,
               "sparsity": 3,
-              "driver_sampling_multiplier": 1
+              "driver_sampling_multiplier": 1,
+              "seed": 0
             }
 
         gen = Generator("testChicago", params)
@@ -76,7 +79,8 @@ class TestGenerator(unittest.TestCase):
             "time_periods": 4,
             "order_distr": "uniform",
             "orders_density": 1,
-            "number_of_cars": 10
+            "number_of_cars": 10,
+            "seed": 0
         }
         gen = Generator("testGenerator", params)
         gen.generate()

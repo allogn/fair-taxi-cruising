@@ -9,12 +9,8 @@ class Solver:
         self.log = params
         self.params = params
         self.verbose = False
-        self.seed(1)
         self.dpath = self.params['dataset']["dataset_path"]
         self.DEBUG = params.get('debug',0) == 1
-
-    def seed(self, seed):
-        self.random_seed = seed
         
     def reset(self):
         raise NotImplementedError()
@@ -35,16 +31,12 @@ class Solver:
 
     def train(self, db_save_callback = None):
         raise NotImplementedError()
-        return
 
     def test(self):
         raise NotImplementedError()
-        return
 
     def save(self):
         raise NotImplementedError()
-        return
 
     def load(self):
         raise NotImplementedError()
-        return

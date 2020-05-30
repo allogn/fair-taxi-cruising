@@ -30,8 +30,7 @@ class GymSolver(TestingSolver):
         env_id = "TaxiEnv-v01"
         self.env_params = self.load_env_params()
 
-        seed = np.random.randint(1,10000)
-        self.log['seed'] = seed
+        seed = self.params['seed']
 
         if self.params.get("lstm", 0) == 1:
             Policy = MlpLstmPolicy
@@ -104,7 +103,7 @@ class GymSolver(TestingSolver):
         return params
 
 
-    def make_env(self, env_id, rank, seed=0, env_params={}):
+    def make_env(self, env_id, rank, seed, env_params={}):
         """
         Utility function for multiprocessed env.
 

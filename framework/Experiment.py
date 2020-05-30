@@ -69,12 +69,12 @@ class Experiment:
         self.db_wrapper = MongoDatabase(self.tag)
         self.db = self.db_wrapper.db
         self.fm = FileManager(self.tag)
-        self.DEBUG = parameters.get("DEBUG", False)
+        self.DEBUG = self.pm.params["DEBUG"]
+        self.seed = self.pm.params["seed"]
         if self.pm.get('full_rerun') == 1:
             self.clear()
             self.fm.clean_data_path()
-            parameters = self.pm.get_all_params()
-            self.db.parameters.insert_one(parameters)
+            self.db.parameters.insert_one(self.pm.params)
 
     def clear(self):
         logging.info("Cleaning data path")
@@ -126,7 +126,6 @@ class Experiment:
     @staticmethod
     def run_solver(solver_params, db_client, DEBUG=False):
         solver_name = solver_params["solver"]
-        solver_params['seed'] = time.time() # must be here, not in the parent function. Otherwise solver lookup by params does not work.
         
         Solver = eval(solver_name + "Solver")
         z = dict(solver_params)
@@ -187,6 +186,8 @@ class Experiment:
                     all_params['dataset'] = d
                     all_params['mode'] = mode
                     all_params['footprint'] = footprint
+                    all_params['debug'] = self.DEBUG
+                    all_params['seed'] = self.seed
                     all_params['tag'] = self.tag
                     if self.db.solution.find_one(all_params) != None:
                        logging.info("{} of {} for {} exists ({}).".format(mode, solver_params['solver'], self.tag, all_params['footprint']))

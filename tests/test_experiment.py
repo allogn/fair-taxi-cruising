@@ -16,6 +16,8 @@ class TestGenerator(unittest.TestCase):
             "solver": {
                 "Diff": [{"draw": 0}]
             },
+            "seed": 123,
+            "DEBUG": 1,
             "full_rerun": 1
         }
 

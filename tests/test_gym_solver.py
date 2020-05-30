@@ -18,7 +18,8 @@ class TestGymSolver:
             "orders_density": 10,
             "number_of_cars": 16,
             "order_distr": "star",
-            "order_sampling_multiplier": 1
+            "order_sampling_multiplier": 1,
+            "seed": 0
         }
 
 
@@ -35,6 +36,14 @@ class TestGymSolver:
             "count_neighbors": 0,
             "weight_poorest": 0,
             "normalize_rewards": 1,
+            "gamma": 0.99,
+            "ent_coef": 0.01,
+            "learning_rate": 0.00025,
+            "vf_coef": 0.5,
+            "max_grad_norm": 0.5,
+            "lam": 0.95,
+            "noptepochs": 4,
+            "cliprange": 0.2,
             "minimum_reward": 0,
             "include_income_to_observation": 0,
             "num_cpu": 4,
@@ -43,6 +52,8 @@ class TestGymSolver:
             "save_freq": 1,
             "eval_freq": 1,
             "testing_epochs": 1,
+            "seed": 0,
+            "debug": 1,
             "training_iterations": 1000 # check testing while training
         }
 

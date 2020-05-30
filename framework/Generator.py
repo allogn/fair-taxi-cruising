@@ -42,7 +42,8 @@ class Generator:
                 "number_of_cars": 4,
                 "time_periods_per_hour": 1,
                 "order_sampling_multiplier": 1,
-                "driver_sampling_multiplier": 1
+                "driver_sampling_multiplier": 1,
+                "seed": 0
             }
 
         self.params = params
@@ -63,6 +64,11 @@ class Generator:
 
         # set default values
         self.params["time_periods_per_hour"] = self.params.get("time_periods_per_hour", self.params["time_periods"]) # static
+
+        self.seed(self.params["seed"])
+
+    def seed(self, seed):
+        self.random = np.random.RandomState(seed)
 
     def gen_id(self):
         return str(uuid.uuid4())
@@ -199,7 +205,6 @@ class Generator:
         with open(os.path.join(self.data_path, "dist.pkl"), "wb") as f:
             pkl.dump(dist, f)
 
-
     def generate_orders(self):
         random_average = []
         hours = self.params["time_periods"] // self.params["time_periods_per_hour"]
@@ -208,14 +213,14 @@ class Generator:
         for hour in range(hours):
             r = self.get_random_average_orders(self.params["order_distr"], 
                                                 self.params["orders_density"], 
-                                                self.G, self.params.get('n', None))
+                                                self.G, self.random, self.params.get('n', None))
             random_average.append(r)
             expected_demand = np.sum(random_average[-1],axis=1) # summation over destination
 
         real_orders = []
         for tt in np.arange(self.params["days"] * self.params["time_periods"]):
             hour = (tt % self.params["time_periods"]) // self.params["time_periods_per_hour"]
-            trips_per_cell = np.random.poisson(random_average[hour])
+            trips_per_cell = self.random.poisson(random_average[hour])
             for i in range(len(self.G)):
                 for j in range(len(self.G)):
                     for trip in range(trips_per_cell[i,j]):
@@ -234,7 +239,7 @@ class Generator:
             pkl.dump(random_average, f)
 
     @staticmethod
-    def get_random_average_orders(distr_type, density, G, n = None):
+    def get_random_average_orders(distr_type, density, G, random_state, n = None):
         random_average = None
         N = len(G)
         assert N > 0
@@ -248,14 +253,14 @@ class Generator:
                     p_target = 1 - (abs((n-1)/2 - j % n)/n) - (abs((n-1)/2 - j // n)/n)
                     random_average[i,j] *= (p_source*0.8 + p_target*0.2) / 2
             random_average = random_average / np.max(random_average)
-            random_average *= density * (1.5 - np.random.random())
+            random_average *= density * (1.5 - random_state.random())
 
         if distr_type == "airport":
             random_average = np.zeros((N,N))
             n = int(np.sqrt(N))
-            random_average[0,:] = np.random.random((N,))*density/2
-            random_average[N-1,:] = np.random.random((N,))*density
-            random_average[n-1,:] = np.random.random((N,))*density
+            random_average[0,:] = random_state.random((N,))*density/2
+            random_average[N-1,:] = random_state.random((N,))*density
+            random_average[n-1,:] = random_state.random((N,))*density
 
         if distr_type == "star":
             assert N >= 3
@@ -284,7 +289,7 @@ class Generator:
             random_average *= density
 
         if distr_type == "uniform":
-            random_average = np.random.random((N,N))*density
+            random_average = random_state.random((N,N))*density
 
         if random_average is None:
             raise Exception("Invalid customer distribution type")
@@ -342,7 +347,7 @@ class Generator:
         driver_cells = []
         for i in range(len(drivers)):
             driver_cells += [i]*int(drivers[i])
-        driver_cells_sample = np.random.choice(driver_cells, int(self.params['driver_sampling_multiplier']*np.sum(drivers)))
+        driver_cells_sample = self.random.choice(driver_cells, int(self.params['driver_sampling_multiplier']*np.sum(drivers)))
         driver_cells_dict = Counter(driver_cells_sample)
         drivers = np.zeros(drivers.shape)
         for k, val in driver_cells_dict.items():

@@ -11,7 +11,8 @@ class TestOrientedSolver:
             "days": 5,
             "number_of_cars": 10,
             'order_sampling_multiplier': 1,
-            "driver_sampling_multiplier": 1
+            "driver_sampling_multiplier": 1,
+            "seed": 0
         }
         gen = Generator("testOrientedSolver", generator_params)
         graph_info = gen.generate()
@@ -28,7 +29,9 @@ class TestOrientedSolver:
             "minimum_reward": 0,
             "include_income_to_observation": 0,
             "training_iterations": 10,
-            "testing_epochs": 2
+            "testing_epochs": 2,
+            "seed": 0,
+            "debug": 1
         }
 
         solver = OrientedSolver(**solver_params)

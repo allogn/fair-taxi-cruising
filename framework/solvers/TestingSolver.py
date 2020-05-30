@@ -20,7 +20,8 @@ class TestingSolver(Solver):
         self.time_periods = self.params['dataset']["time_periods"]
         self.days = self.params['dataset']["days"]
         self.load_dataset()
-        self.init_gym(self.params.get('testing_seed',0))
+        self.init_gym(self.params['seed'])
+        self.seed(self.params['seed'])
 
         # tf logging
         # self.artist = Artist()
@@ -43,7 +44,9 @@ class TestingSolver(Solver):
         
         # self.epoch_stats = {}
         # self.summaries = None
-        
+
+    def seed(self, seed):
+        self.random = np.random.RandomState(seed)
 
     def init_gym(self, testing_seed):
         env_params = {
@@ -60,7 +63,8 @@ class TestingSolver(Solver):
             "include_income_to_observation": self.params.get('include_income_to_observation', 0) == 1,
             "poorest_first": self.params.get("poorest_first", 0) == 1,
             "idle_reward": self.params.get("idle_reward", 0) == 1,
-            "seed": testing_seed
+            "seed": testing_seed,
+            "debug": self.params["debug"]
         }
         env_id = "TaxiEnvBatch{}-v01".format(str(uuid.uuid4()))
         gym.envs.register(
@@ -80,11 +84,10 @@ class TestingSolver(Solver):
         self.world, self.idle_driver_locations, self.real_orders, \
             self.onoff_driver_locations, random_average, dist = gen.load_complete_set(dataset_id=self.params['dataset']['dataset_id'])
 
-    def run_test_episode(self, training_iter, draw=False, debug=True):
+    def run_test_episode(self, training_iter, draw=False, debug=False):
         stats = {}
         t = time.time()
-        randseed = np.random.randint(1,100000)
-        stats['seed'] = float(randseed)
+        randseed = self.params['seed'] + 2*training_iter + 1234
         self.test_env.seed(randseed)
         self.test_env.DEBUG = debug
         state = self.test_env.reset()
@@ -131,7 +134,6 @@ class TestingSolver(Solver):
 
     def run_tests(self, training_iteration, draw = False, verbose = 1):
         t1 = time.time()
-        self.log['seeds'] = []
 
         # average per testing iteration
         test_stats = {

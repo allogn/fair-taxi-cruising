@@ -19,6 +19,7 @@ class Estimator:
                  sess,
                  world,
                  n_intervals,
+                 seed,
                  scope="estimator",
                  summary_dir=None,
                  wc=0,
@@ -27,6 +28,7 @@ class Estimator:
         self.n_valid_grid = len(world)
         self.wc = wc
         self.world = world
+        self.seed(seed)
         self.include_income = include_income
 
         self.T = n_intervals
@@ -144,6 +146,9 @@ class Estimator:
 
         return value_output
 
+    def seed(self, seed):
+        self.random = np.random.RandomState(seed)
+
     def action(self, s, context, epsilon):
         """ Compute current action for all grids give states
 
@@ -193,7 +198,7 @@ class Estimator:
                 continue
 
             # context has preassigned drivers
-            curr_action_indices_temp = np.random.choice(self.action_dim, int(context[grid_valid_idx]), # from where and how many
+            curr_action_indices_temp = self.random.choice(self.action_dim, int(context[grid_valid_idx]), # from where and how many
                                                         p=action_prob/np.sum(action_prob))
             # print(int(context[grid_valid_idx]), " context for ", grid_valid_idx, len(curr_action_indices_temp))
             # num of drivers dispatched to nearby locations [2,3,2,3,1,3,3]

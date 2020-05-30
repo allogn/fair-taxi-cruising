@@ -16,7 +16,8 @@ class TestcA2CSolver:
             "orders_density": 2,
             "number_of_cars": 20,
             "order_distr": "star",
-            "order_sampling_multiplier": 1
+            "order_sampling_multiplier": 1,
+            "seed": 0
         }
 
         gen = Generator("testTaxiEnvBatch", generator_params)
@@ -32,7 +33,8 @@ class TestcA2CSolver:
             "iterations": 1, # 1 epoch
             "tag": "testTaxiEnvBatch",
             "gamma": 0.9,
-            "order_sampling_multiplier": 1
+            "order_sampling_multiplier": 1,
+            "seed": 0
         }
         ca2c_params = {
             "dataset": graph_info,
@@ -49,7 +51,9 @@ class TestcA2CSolver:
             "batch_size": 20,
             "include_income_to_observation": 1,
             "testing_epochs": 2,
-            "draw": 0
+            "draw": 0,
+            "seed": 0,
+            "debug": 1
         }
         solv = cA2CSolver(**ca2c_params)
 

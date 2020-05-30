@@ -78,7 +78,9 @@ class TestSplitSolver:
             "testing_epochs": 2,
             "draw": 0,
             "shrinking_fraction": 0.9,
-            "subsolver": "Diff"
+            "subsolver": "Diff",
+            "debug": 1,
+            "seed": 123
         }
         solv = SplitSolver(**params)
         solv.init_subsolvers()
