@@ -23,6 +23,8 @@
         "batch_size": 2000,
         "include_income_to_observation": 0,
         "poorest_first": 1,
+        "idle_reward": 0,
+        "hold_observation": 1,
         "draw": 1
       },
       "Gym": {
@@ -44,6 +46,8 @@
         "callback": 1,
         "save_freq": 1000,
         "eval_freq": 1,
+        "idle_reward": 0,
+        "hold_observation": 1,
         "draw": 1
       },
       "No": {},
@@ -56,11 +60,13 @@
         "robust_epsilon": 0.1,
         "robust_nu": 0.1,
         "iterations": 20,
+        "hold_observation": 1,
         "gamma": 0.9,
         "learning_rate": 1e-3,
         "weight_poorest": 0,
         "normalize_rewards": [1, 0],
         "minimum_reward": 1,
+        "idle_reward": 0,
         "batch_size": 2000,
         "include_income_to_observation": 0,
         "poorest_first": 1,
@@ -71,8 +77,10 @@
         "iterations": 10,
         "subsolver": "Diff",
         "weight_poorest": 0,
+        "hold_observation": 1,
         "normalize_rewards": 1,
         "minimum_reward": 0,
+        "idle_reward": 0,
         "poorest_first": 1,
         "include_income_to_observation": 0
       }

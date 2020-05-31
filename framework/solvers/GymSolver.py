@@ -97,7 +97,11 @@ class GymSolver(TestingSolver):
             "normalize_rewards": self.params['normalize_rewards'] == 1,
             "minimum_reward": self.params['minimum_reward'] == 1,
             "include_income_to_observation": self.params['include_income_to_observation'] == 1,
-            "poorest_first": self.params.get("poorest_first", 0) == 1
+            "poorest_first": self.params.get("poorest_first", 0) == 1,
+            "idle_reward": self.params["idle_reward"], 
+            "seed": self.params["seed"],
+            "hold_observation": self.params["hold_observation"],
+            "debug": self.params["debug"]
         }
 
         return params
