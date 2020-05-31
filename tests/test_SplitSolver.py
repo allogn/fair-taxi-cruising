@@ -55,7 +55,7 @@ class TestSplitSolver:
                 s[source] -= flow
                 s[dest] += flow
         assert np.sum(s) == np.sum(idle_drivers), (s, flow_per_edge)
-        assert s[1] == 0 and s[3] == 0 and s[0] > 1 and s[2] > 1 and s[4] > 1, (s, flow_per_edge)
+        assert s[1] == 0 and s[3] == 0 and s[0] > 1 and s[2] >= 1 and s[4] >= 1, (s, flow_per_edge)
 
         # test non-complete graph
         # ...

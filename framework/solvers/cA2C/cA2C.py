@@ -179,7 +179,7 @@ class Estimator:
             temp_qvalue[curr_neighbor_mask[idx] > 0] = valid_qvalues
             temp_qvalue[temp_qvalue < temp_qvalue[-1]] = 0
             curr_neighbor_mask[idx][np.where(temp_qvalue < temp_qvalue[-1])] = 0
-            if np.sum(curr_neighbor_mask[idx]) == 0:
+            if (curr_neighbor_mask[idx] == 0).all():
                 curr_neighbor_mask[idx] = self.valid_action_mask[idx]
 
         # compute policy probability.

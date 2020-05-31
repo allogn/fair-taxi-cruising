@@ -153,7 +153,7 @@ class TestingSolver(Solver):
 
         for day in range(total_test_days): # number of episodes
             # plot and check consistency only at first iteration to save time and space
-            stats = self.run_test_episode(training_iteration, draw and day == 0, day == 0) 
+            stats = self.run_test_episode(training_iteration, draw and day == 0, self.DEBUG) 
             # need to rereun all experiments in server to plot because current ones
             # are done with graph with missing coordinates
 

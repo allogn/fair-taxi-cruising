@@ -54,8 +54,8 @@ class RobustGymSolver(cA2CSolver):
             if self.DEBUG:
                 logging.info("Finished iteration with cmin, cmax, delta {}".format((cmin, cmax, cmax - cmin)))
 
-        # if self.DEBUG:
-        logging.info("Finishing with final c {}".format(c))
+        if self.DEBUG:
+            logging.info("Finishing with final c {}".format(c))
         steps_log = sorted(steps_log)
 
         if self.DEBUG:
