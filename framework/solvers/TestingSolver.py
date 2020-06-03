@@ -141,6 +141,7 @@ class TestingSolver(Solver):
             "total_sum_income_per_epoch": [],
             "total_avg_income_per_epoch": [],
             "total_reward_per_epoch": [],
+            "total_gini_per_epoch": [],
             "total_min_idle_per_epoch": [],
             "total_avg_idle_per_epoch": [],
             "total_sum_idle_per_epoch": []
@@ -161,6 +162,7 @@ class TestingSolver(Solver):
             test_stats["total_sum_income_per_epoch"].append(np.sum(stats['driver_income']))
             test_stats["total_avg_income_per_epoch"].append(np.sum(stats['driver_income']))
             test_stats["total_reward_per_epoch"].append(np.sum(stats['rewards']))
+            test_stats["total_gini_per_epoch"].append(np.sum(stats['gini']))
             test_stats["total_min_idle_per_epoch"].append(np.min(stats['driver_income']))
             test_stats["total_avg_idle_per_epoch"].append(np.mean(stats['idle_periods']))
             test_stats["total_sum_idle_per_epoch"].append(np.sum(stats['idle_periods']))
@@ -173,7 +175,7 @@ class TestingSolver(Solver):
         values = []
         for k, val in test_stats.items():
             values.append(tf.Summary.Value(tag="test_stats/" + k + '_mean', simple_value=float(np.mean(val))))
-            values.append(tf.Summary.Value(tag="test_stats/" + k + '_std', simple_value=float(np.std(val))))
+            # values.append(tf.Summary.Value(tag="test_stats/" + k + '_std', simple_value=float(np.std(val))))
         summary = tf.Summary(value=values)
         self.test_tf_writer.add_summary(summary, training_iteration)
         self.log['test_test_time'] = time.time() - t1
