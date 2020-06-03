@@ -90,3 +90,25 @@ class TestGenerator(unittest.TestCase):
         assert g.has_edge(1,3)
         assert g.has_edge(1,5)
         assert g.number_of_edges() == 20
+
+    def test_matthew(self):
+        m = Generator.generate_matthew_matrix(4, 81, self.random, 1)
+        assert m.shape == (81,81)
+        allowed_rows = [0, 3, 3*9, 3*9+3, 80, 77, 81-3*9-1, 81-3*9-4]
+        for i in range(81):
+            if i in allowed_rows:   
+                assert np.sum(m[i,:]) > 0, i
+            else:
+                assert np.sum(m[i,:]) == 0, i
+
+    def test_matthew_target(self):
+        m = Generator.get_random_matthew_target(4, 81, self.random, 1, False)
+        assert (m[:4] > 0).all()
+        assert (m[4:9] == 0).all()
+        assert (m[9:13] > 0).all()
+        assert (m[13:18] == 0).all()
+        assert (m[18:22] > 0).all()
+        assert (m[22:27] == 0).all()
+        assert (m[27:31] > 0).all()
+        assert (m[31:] == 0).all()
+        assert m.shape == (81,)

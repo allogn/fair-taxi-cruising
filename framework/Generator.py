@@ -7,6 +7,7 @@ import numpy as np
 import logging
 import uuid
 from scipy.spatial.distance import euclidean
+from collections import Counter
 import scipy.stats
 import pickle as pkl
 from shutil import copyfile
@@ -181,10 +182,10 @@ class Generator:
 
     def generate_drivers(self):
         idle_driver_locations = np.zeros((self.params["time_periods"], len(self.G)), dtype=int)
-        leftover = self.params["number_of_cars"] - np.sum([int(self.params["number_of_cars"]/len(self.G))] * len(self.G))
         for t in np.arange(self.params["time_periods"]):
-            idle_driver_locations[t, :] = [int(self.params["number_of_cars"]/len(self.G))] * len(self.G) # uniform
-            idle_driver_locations[t, -1] += leftover
+            d = Counter(self.random.choice(len(self.G), self.params["number_of_cars"]))
+            for k, val in d.items():
+                idle_driver_locations[t, k] = val
 
         # only city_name = 0 is used in simulation
         with open(os.path.join(self.data_path, "idle_driver_locations.pkl"), "wb") as f:
@@ -227,6 +228,8 @@ class Generator:
                         # origin grid, destination grid, start time, duration, price
                         pprice = self.dist[i,j]
                         if self.params["order_distr"] == 'airport' and i == 0:
+                            pprice *= 10
+                        if self.params["order_distr"] == 'matthew' and i < len(self.G)//2:
                             pprice *= 10
                         #assert i == 0 or i == len(self.G)-1
                         #assert j != 0 and j != len(self.G)-1
@@ -288,6 +291,9 @@ class Generator:
                 random_average[i, center] = 1
             random_average *= density
 
+        if distr_type == "matthew":
+            random_average = Generator.generate_matthew_matrix(4, N, random_state, density)
+
         if distr_type == "uniform":
             random_average = random_state.random((N,N))*density
 
@@ -297,6 +303,40 @@ class Generator:
         random_average = np.abs(random_average)
         np.fill_diagonal(random_average, 0)
         return random_average
+
+
+    @staticmethod
+    def generate_matthew_matrix(n_small, N, random_state, density):
+        # generate two random sqares of size 4x4 in a bigger square, and place them on the left top and bottom right
+        n = int(np.sqrt(N))
+        assert n >= 9
+
+        max_ind = (n+1)*(n_small-1)
+        assert max_ind < N
+        random_average_top = np.zeros((max_ind+1, N))
+        random_average_down = np.zeros((max_ind+1, N))
+        for i in [0, n_small-1, n*(n_small-1), max_ind]:
+            random_average_top[i,:] = Generator.get_random_matthew_target(n_small, N, random_state, density)
+            random_average_down[i,:] = Generator.get_random_matthew_target(n_small, N, random_state, density, True)
+
+        random_average = np.zeros((N,N))
+        random_average[:max_ind+1,:] = random_average_top
+        random_average[-max_ind-1:,:] = random_average_down
+        return random_average
+
+    @staticmethod
+    def get_random_matthew_target(n_small, N, random_state, density, flipped=False):
+        # nxn grid, n > 9;
+        # left top corner: 0, 3, 3*n, 3*n + 3 -> to any random within the square
+        # bottom right corner: n*n-1, n*n-4, n(n-1)-1, n(n-1)-4 -> to any random withing that corner
+        # n(n-1)-4 > 3*n+3 => n >= 9
+        n = int(np.sqrt(N))
+        m = np.zeros((n,n))
+        if flipped:
+            m[-n_small:, -n_small:] = random_state.random((n_small, n_small))*density
+        else:
+            m[:n_small, :n_small] = random_state.random((n_small, n_small))*density
+        return m.flatten()
 
     ### Real-World
 

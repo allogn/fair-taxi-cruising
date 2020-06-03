@@ -25,6 +25,7 @@
         "poorest_first": 1,
         "idle_reward": 0,
         "hold_observation": 1,
+        "draw_freq": 2,
         "draw": 1
       },
       "Gym": {
@@ -44,7 +45,7 @@
         "include_income_to_observation": 1,
         "poorest_first": 1,
         "callback": 1,
-        "save_freq": 1000,
+        "save_freq": 100000,
         "eval_freq": 1,
         "idle_reward": 0,
         "hold_observation": 1,
@@ -70,6 +71,7 @@
         "batch_size": 2000,
         "include_income_to_observation": 0,
         "poorest_first": 1,
+        "draw_freq": 2,
         "draw": 1
       },
       "Split": {

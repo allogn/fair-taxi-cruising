@@ -186,7 +186,8 @@ class cA2CSolver(TestingSolver):
 
         # running tests
         time_tests = time.time()
-        self.run_tests(n_iter+1, draw=self.params['draw'] == 1, verbose=0)
+        if_draw = (self.params['draw'] == 1) and (n_iter % self.params['draw_freq'] == 0)
+        self.run_tests(n_iter+1, draw=if_draw, verbose=0)
         self.log["time_tests"] += time.time() - time_tests
 
         time_batch = time.time()
