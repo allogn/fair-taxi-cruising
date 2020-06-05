@@ -151,6 +151,7 @@ class GymSolver(TestingSolver):
                                     self.params['robust_cmin'], 
                                     self.params['robust_cmax'],
                                     verbose=0))
+            return callbacks
         else:
             return no_callback
 
