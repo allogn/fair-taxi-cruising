@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 from stable_baselines.common.callbacks import BaseCallback
 from collections.abc import Iterable
+import logging
 
 class EpisodeStatsLogger:
     def __init__(self, tb_writer):
@@ -109,3 +110,47 @@ class TestingCallback(BaseCallback):
     def _on_rollout_end(self) -> bool:
         if self.eval_freq > 0 and self.rollout_calls % self.eval_freq == 0:
             self.solver.run_tests(self.rollout_calls // self.eval_freq, draw=self.draw, verbose=self.verbose)
+        return True
+
+class RobustCallback(BaseCallback):
+    def __init__(self, solver, nu, epsilon, gamma, cmin, cmax, verbose=0):
+        super(RobustCallback, self).__init__(verbose)
+        self.solver = solver
+        self.nu = nu
+        self.epsilon = epsilon
+        self.gamma = gamma
+        self.cmin = cmin
+        self.cmax = cmax
+        self.call = 0
+
+    def find_c(self):
+        cmin = self.cmin
+        cmax = self.cmax
+        c = (cmax + cmin) / 2
+        steps_log = []
+        while abs((cmax + cmin)/2 - cmin) > self.epsilon:
+            self.solver.test_env.set_income_bound(c)
+            stats = self.solver.run_test_episode(0, draw=False, debug=False) 
+            reward = np.sum(stats['driver_income_bounded'])
+
+            robust_threshold = c * self.solver.test_env.n_drivers * (1 - self.nu)
+            possible = reward > robust_threshold
+            steps_log.append((c, reward, c * self.solver.test_env.n_drivers, reward - robust_threshold))
+            if possible:
+                cmin = cmin + (c - cmin) * self.gamma
+                c = (cmax + cmin) / 2
+            else:
+                cmax = cmax - (cmax - c) * self.gamma
+                c = (cmax + cmin) / 2
+
+        logging.info("Finishing with final c={}".format(c))
+        steps_log = sorted(steps_log)
+        self.solver.log['step_log_{}'.format(self.rollout_calls)] = np.array(steps_log, dtype=float).tolist()
+
+        return c
+
+    def _on_rollout_end(self) -> bool:
+        if self.rollout_calls % 3 == 0:
+            c = self.find_c()
+            self.training_env.env_method("set_income_bound", c)
+            # self.solver.test_env.set_income_bound(c)

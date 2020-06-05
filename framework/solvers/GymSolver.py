@@ -18,7 +18,7 @@ from framework.Generator import Generator
 from framework.FileManager import FileManager
 from framework.solvers.cA2C.oenvs import CityReal
 from framework.ParameterManager import ParameterManager
-from framework.solvers.callbacks import TensorboardCallback, TestingCallback
+from framework.solvers.callbacks import TensorboardCallback, TestingCallback, RobustCallback
 
 class GymSolver(TestingSolver):
     def __init__(self, **params):
@@ -138,11 +138,19 @@ class GymSolver(TestingSolver):
             return True
 
         if self.params.get("callback", 0) == 1:
-            return [
+            callbacks = [
                 TensorboardCallback(),
                 TestingCallback(self, verbose=0, eval_freq=self.params['eval_freq'], draw=self.params['draw'] == 1),
                 CheckpointCallback(save_freq=self.params['save_freq'], 
                                     save_path=self.log_dir, name_prefix='gymsave')]
+            if self.params['robust']:
+                callbacks.append(RobustCallback(self, 
+                                    self.params['robust_nu'], 
+                                    self.params['robust_epsilon'], 
+                                    self.params['robust_gamma'],
+                                    self.params['robust_cmin'], 
+                                    self.params['robust_cmax'],
+                                    verbose=0))
         else:
             return no_callback
 

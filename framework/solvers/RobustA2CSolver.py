@@ -1,6 +1,5 @@
 import os, sys
 
-from framework.solvers.GymSolver import GymSolver
 from framework.solvers.cA2CSolver import cA2CSolver
 from framework.solvers.cA2C.cA2C import *
 
@@ -12,12 +11,9 @@ from tqdm import tqdm
 import time
 import logging
 
-class RobustGymSolver(cA2CSolver):
+class RobustA2CSolver(cA2CSolver):
     def __init__(self, **params):
         super().__init__(**params)
-
-    def get_solver_signature(self):
-        return "Robust" + super().get_solver_signature()
 
     def find_c(self, training_iteration):
         best_robust_reward, robust_threshold = -np.inf, 0
@@ -31,39 +27,29 @@ class RobustGymSolver(cA2CSolver):
         steps_log = []
         while abs((cmax + cmin)/2 - cmin) > epsilon:
             self.test_env.set_income_bound(c)
-            stats = self.run_test_episode(training_iteration, draw=False, debug=False) 
-            reward = np.sum(stats['rewards'])
-            if self.DEBUG:
-                logging.info("Trying c={}. Reward {}".format(c, reward))
+            stats = self.run_test_episode(training_iteration, draw=False, debug=self.DEBUG) 
+            reward = np.sum(stats['driver_income_bounded'])
             best_robust_reward = max(best_robust_reward, reward)
 
             robust_threshold = c * self.test_env.n_drivers * (1 - nu)
             possible = reward > c * self.test_env.n_drivers * (1 - nu)
-            steps_log.append((c, reward - c * self.test_env.n_drivers * (1 - nu)))
+            steps_log.append((c, reward, c * self.test_env.n_drivers, reward - c * self.test_env.n_drivers * (1 - nu)))
             if possible:
                 cmin = cmin + (c - cmin) * gamma
                 c = (cmax + cmin) / 2
-                if self.DEBUG:
-                    logging.info("Possible. reward {}, thsh {}, gap {}".format(reward, robust_threshold, steps_log[-1][1]))
             else:
                 cmax = cmax - (cmax - c) * gamma
                 c = (cmax + cmin) / 2
-                if self.DEBUG:
-                    logging.info("Impossible. reward {}, thsh {}, gap {}".format(reward, robust_threshold, steps_log[-1][1]))
-
-            if self.DEBUG:
-                logging.info("Finished iteration with cmin, cmax, delta {}".format((cmin, cmax, cmax - cmin)))
-
-        if self.DEBUG:
-            logging.info("Finishing with final c {}".format(c))
+            
+        logging.info("Finishing with final c={}".format(c))
         steps_log = sorted(steps_log)
+        self.log['step_log_{}'.format(training_iteration)] = np.array(steps_log, dtype=float).tolist()
 
         if self.DEBUG:
             for x in steps_log:
-                print("{:10.4f}:{}".format(x[0], 1 if x[1] > 0 else 0))
+                logging.info("c={:10.4f}:rew={}:gap={}".format(x[0], x[1], x[3]))
 
         return c
-
 
     def train(self, db_save_callback = None):
         t1 = time.time()

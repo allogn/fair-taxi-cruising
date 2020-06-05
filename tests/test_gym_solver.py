@@ -49,10 +49,18 @@ class TestGymSolver:
             "num_cpu": 4,
             "callback": 1,
             "draw": 0,
+            "idle_reward": 0,
+            "hold_observation": 1,
             "save_freq": 1,
             "eval_freq": 1,
             "testing_epochs": 1,
             "seed": 0,
+            "robust": 0,
+            "robust_nu": 0.1,
+            "robust_epsilon": 1,
+            "robust_cmin": 0,
+            "robust_cmax": 500,
+            "robust_gamma": 0.3,
             "debug": 1,
             "training_iterations": 1000 # check testing while training
         }

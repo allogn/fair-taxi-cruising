@@ -49,12 +49,19 @@
         "eval_freq": 1,
         "idle_reward": 0,
         "hold_observation": 1,
-        "draw": 1
+        "draw": 1,
+        "draw_freq": 2,
+        "robust": 0,
+        "robust_nu": 0.1,
+        "robust_epsilon": 1,
+        "robust_cmin": 0,
+        "robust_cmax": 500,
+        "robust_gamma": 0.3
       },
       "No": {},
       "Diff": {},
       "Oriented": {},
-      "RobustGym": {
+      "RobustA2C": {
         "robust_gamma": 0.3,
         "cmin": 0,
         "cmax": 10000,
