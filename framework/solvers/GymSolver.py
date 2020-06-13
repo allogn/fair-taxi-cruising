@@ -140,7 +140,8 @@ class GymSolver(TestingSolver):
         if self.params.get("callback", 0) == 1:
             callbacks = [
                 TensorboardCallback(),
-                TestingCallback(self, verbose=0, eval_freq=self.params['eval_freq'], draw=self.params['draw'] == 1),
+                TestingCallback(self, verbose=0, eval_freq=self.params['eval_freq'], 
+                                draw=self.params['draw'] == 1, draw_freq=self.params['draw_freq']),
                 CheckpointCallback(save_freq=self.params['save_freq'], 
                                     save_path=self.log_dir, name_prefix='gymsave')]
             if self.params['robust']:

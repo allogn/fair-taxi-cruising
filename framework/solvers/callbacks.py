@@ -94,11 +94,12 @@ class TestingCallback(BaseCallback):
     """
     Custom callback for plotting additional values in tensorboard.
     """
-    def __init__(self, solver, verbose=0, eval_freq=1, draw=True):
+    def __init__(self, solver, verbose=0, eval_freq=1, draw=True, draw_freq=1):
         super(TestingCallback, self).__init__(verbose)
         self.eval_freq = eval_freq
         self.solver = solver
         self.draw = draw
+        self.draw_freq = draw_freq
         self.verbose = verbose
 
     def _on_training_start(self) -> None:
@@ -109,7 +110,8 @@ class TestingCallback(BaseCallback):
 
     def _on_rollout_end(self) -> bool:
         if self.eval_freq > 0 and self.rollout_calls % self.eval_freq == 0:
-            self.solver.run_tests(self.rollout_calls // self.eval_freq, draw=self.draw, verbose=self.verbose)
+            if_draw = self.draw and self.rollout_calls % self.draw_freq == 0
+            self.solver.run_tests(self.rollout_calls // self.eval_freq, draw=if_draw, verbose=self.verbose)
         return True
 
 class RobustCallback(BaseCallback):
