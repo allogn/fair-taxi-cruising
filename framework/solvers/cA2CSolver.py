@@ -73,6 +73,8 @@ class cA2CSolver(TestingSolver):
             kwargs=env_params
         )
         self.env = gym.make(env_id)
+        if len(self.views) == 1:
+            self.env.set_view(self.views[next(iter(self.views))])
 
     def init(self):
         self.sess.close()

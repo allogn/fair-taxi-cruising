@@ -73,6 +73,8 @@ class TestingSolver(Solver):
             kwargs=env_params
         )
         self.test_env = gym.make(env_id)
+        if len(self.views) == 1:
+            self.test_env.set_view(self.views[next(iter(self.views))])
 
     def load_dataset(self):
         '''
@@ -83,6 +85,17 @@ class TestingSolver(Solver):
         gen = Generator(self.params['tag'], dataset_params)
         self.world, self.idle_driver_locations, self.real_orders, \
             self.onoff_driver_locations, random_average, dist = gen.load_complete_set(dataset_id=self.params['dataset']['dataset_id'])
+
+        # check for views as an attribute of the network
+        views = {}
+        for n in self.world.nodes(data=True):
+            if 'view' not in n[1]:
+                break
+            if n[1]['view'] != -1:
+                if n[1]['view'] not in views:
+                    views[n[1]['view']] = []
+                views[n[1]['view']].append(n[0])
+        self.views = views
 
     def run_test_episode(self, training_iter, draw=False, debug=False):
         stats = {}

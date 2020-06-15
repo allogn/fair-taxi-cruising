@@ -145,15 +145,6 @@ class Generator:
         self.G = nx.convert_node_labels_to_integers(self.G)
         self.assign_weight_by_coords()
 
-        # if self.params["order_distr"] == "airport":
-        #     new_edges = []
-        #     for i in range(1,len(self.G)-1):
-        #         new_edges.append((0,i))
-        #         new_edges.append((len(self.G)-1, i))
-        #     self.G.add_edges_from(new_edges)
-        #     logging.info("Airport distribution: ")
-        #     logging.info("{}".format([self.G.degree(n) for n in self.G.nodes()]))
-
         nx.write_gpickle(self.G, os.path.join(self.data_path, "world.pkl"))
 
         self.generate_dist() # important to generate before orders, so that orders can use dist
@@ -357,6 +348,15 @@ class Generator:
         self.G = nx.convert_node_labels_to_integers(self.G)
         for i in range(len(self.G)):
             assert(i in self.G)
+
+        # check if to load only the center
+        if self.params.get('only_center', 0) == 1:
+            nx.set_node_attributes(self.G, -1, "view")
+            nodes = np.loadtxt(os.path.join(self.fm.get_root_path(), "center_100_nodes.csv"))
+            for n in nodes:
+                self.G.nodes[n]['view'] = 1
+            logging.info("Center view for Chicago is selected of size {}".format(len(nodes)))
+
         nx.write_gpickle(self.G, os.path.join(self.data_path, "world.pkl"))
         # self.generate_dist() -- not needed here anymore
         with open(os.path.join(self.data_path, "dist.pkl"), "wb") as f:

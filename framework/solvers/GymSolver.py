@@ -124,6 +124,8 @@ class GymSolver(TestingSolver):
             ) # must be in make_env because otherwise doesn't work
             env = gym.make(env_id)
             env.seed(seed + rank)
+            if len(self.views) == 1:
+                env.set_view(self.views[next(iter(self.views))])
             return env
         set_global_seeds(seed)
         return _init
