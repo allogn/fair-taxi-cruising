@@ -74,7 +74,8 @@ class Estimator:
 
 
         self.neighbors_list = []
-        for idx, node_id in enumerate(self.world.nodes()):
+        for node_id in range(len(self.world)):
+            assert self.world.has_node(node_id), "Nodes in the network assumed to be sequentially enumerated"
             neighbor_ids = list(self.world.neighbors(node_id))
             neighbor_ids.append(node_id)
             self.neighbors_list.append(neighbor_ids)

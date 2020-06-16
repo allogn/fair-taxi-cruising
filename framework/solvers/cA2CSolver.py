@@ -82,7 +82,13 @@ class cA2CSolver(TestingSolver):
         self.sess = tf.Session()
         tf.set_random_seed(self.params['seed'])
 
-        self.q_estimator = Estimator(self.sess, self.env.world, self.time_periods, self.params['seed'],
+        # create a subnetwork that contains only the view
+        view_network = nx.Graph(self.env.world.subgraph([k for k, val in self.env.full_to_view_ind.items()]))
+        nx.relabel_nodes(view_network, self.env.full_to_view_ind, copy=False)
+        assert len(view_network) == len(self.env.view_to_full_ind)
+        assert int(np.max([d for n, d in view_network.degree()])) + 1 == self.env.action_space_shape[0]
+
+        self.q_estimator = Estimator(self.sess, view_network, self.time_periods, self.params['seed'],
                                         scope=self.get_solver_signature(), summary_dir=self.log_dir, wc=self.params["wc"],
                                         include_income = self.params['include_income_to_observation'] == 1)
         self.stateprocessor = stateProcessor(self.q_estimator.action_dim, self.q_estimator.n_valid_grid, self.time_periods,
@@ -173,7 +179,7 @@ class cA2CSolver(TestingSolver):
             # s1
             curr_state = next_state
             curr_s = self.stateprocessor.utility_conver_states(next_state)
-            normalized_curr_s = self.stateprocessor.utility_normalize_states(curr_s, len(self.world))
+            normalized_curr_s = self.stateprocessor.utility_normalize_states(curr_s, self.env.get_view_size())
             s_grid = self.stateprocessor.to_grid_states(normalized_curr_s, self.env.time, income_mat)  # t0, s0
 
             # c1
@@ -260,7 +266,8 @@ class cA2CSolver(TestingSolver):
 
         Note that observation is normalized, while current state shouldn't be!
         '''
-        current_state = observation[:2*len(self.world)].reshape(2, len(self.world))
+        view_size = self.env.get_view_size()
+        current_state = observation[:2*view_size].reshape(2, view_size)
         current_state[0,:] *= new_info["driver normalization constant"]
         current_state[1,:] *= new_info["order normalization constant"]
         current_state_int = np.array(current_state, dtype=int)
@@ -268,8 +275,8 @@ class cA2CSolver(TestingSolver):
         current_state = current_state_int
         info = self.env.compute_remaining_drivers_and_orders(current_state)
         if self.params['include_income_to_observation']:
-            assert observation[:-len(self.world)].shape[0] == 3*len(self.world) + self.env.n_intervals, "Observation is missing income"
-            income_mat = observation[-len(self.world):]
+            assert observation[:-view_size].shape[0] == 3*view_size + self.env.n_intervals, "Observation is missing income"
+            income_mat = observation[-view_size:]
         else:
             income_mat = None
         return current_state, info, income_mat
@@ -280,15 +287,15 @@ class cA2CSolver(TestingSolver):
 
         :return: an action vector for taxi_gym_batch environment, which is a concatenation of actions per cell
         '''
-        one_action_shape = self.env.action_space_shape[0] # get space shape for single action! (don't use geter)
-        action = np.zeros(one_action_shape*len(self.world))
-        for n in self.world.nodes():
+        one_action_shape = self.env.action_space_shape[0] # get space shape for single action! (don't use getter)
+        action = np.zeros(one_action_shape*self.env.get_view_size())
+        for _, n in self.env.full_to_view_ind.items(): # iteration through values (view indexes)
             action[n*one_action_shape:(n+1)*one_action_shape] = valid_prob[n]
         return action
 
     def get_dispatch_action(self, env, state, context):
         curr_s = self.stateprocessor.utility_conver_states(state)
-        normalized_curr_s = self.stateprocessor.utility_normalize_states(curr_s, len(self.world))
+        normalized_curr_s = self.stateprocessor.utility_normalize_states(curr_s, self.env.get_view_size())
         s_grid = self.stateprocessor.to_grid_states(normalized_curr_s, self.env.city_time)  # t0, s0
 
         context22 = self.stateprocessor.compute_context(context)
@@ -303,7 +310,7 @@ class cA2CSolver(TestingSolver):
         curr_state, oldstyle_info, income_mat = self.observation_to_old_fashioned_info(state, info)
         context = self.stateprocessor.compute_context(oldstyle_info)
         curr_s = self.stateprocessor.utility_conver_states(curr_state) # [cars customers] flattened
-        normalized_curr_s = self.stateprocessor.utility_normalize_states(curr_s, len(self.world))
+        normalized_curr_s = self.stateprocessor.utility_normalize_states(curr_s, self.env.get_view_size())
         s_grid = self.stateprocessor.to_grid_states(normalized_curr_s, self.env.time, income_mat)
 
         action_tuple, valid_action_prob_mat, policy_state, action_choosen_mat, \

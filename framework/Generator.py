@@ -132,11 +132,20 @@ class Generator:
         for n in self.G.nodes():
             self.G.nodes[n]['coords'] = (n, 0)
         self.assign_weight_by_coords()
+        self.set_uniform_view()
         nx.write_gpickle(self.G, os.path.join(self.data_path, "world.pkl"))
         self.generate_dist() # important to generate before orders, so that orders can use dist
         self.generate_orders()
         self.generate_drivers()
         return {}
+
+    def set_uniform_view(self):
+        if self.params.get("view_div", 1) == 1:
+            return
+        n_nodes = int(len(self.G) * self.params["view_div"])
+        nx.set_node_attributes(self.G, -1, "view")
+        for n in range(n_nodes):
+            self.G.nodes[n]['view'] = 1
 
     def generate_grid(self, n):
         self.G = nx.grid_2d_graph(n, n)
