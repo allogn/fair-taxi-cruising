@@ -41,7 +41,7 @@ class GymSolver(TestingSolver):
             nminibatches = 4
             num_cpu = self.params['num_cpu']
         # Create the vectorized environment
-        self.train_env = SubprocVecEnv([self.make_env(env_id, i, seed+i, self.env_params) for i in range(num_cpu)])
+        self.train_env = SubprocVecEnv([self.make_env(env_id, i, seed+i, self.views, self.env_params) for i in range(num_cpu)])
 
         self.train_env = VecNormalize(self.train_env, norm_obs=False, norm_reward=False)
 
@@ -107,9 +107,10 @@ class GymSolver(TestingSolver):
         return params
 
 
-    def make_env(self, env_id, rank, seed, env_params={}):
+    def make_env(self, env_id, rank, seed, views, env_params={}):
         """
         Utility function for multiprocessed env.
+        Note: do not use self.<vars> in this function! _thread.lock bug appears in multiprocessing
 
         :param env_id: (str) the environment ID
         :param num_env: (int) the number of environments you wish to have in subprocesses
@@ -124,8 +125,8 @@ class GymSolver(TestingSolver):
             ) # must be in make_env because otherwise doesn't work
             env = gym.make(env_id)
             env.seed(seed + rank)
-            if len(self.views) == 1:
-                env.set_view(self.views[next(iter(self.views))])
+            if len(views) == 1:
+                env.set_view(views[next(iter(views))])
             return env
         set_global_seeds(seed)
         return _init
