@@ -64,6 +64,7 @@ class TestingSolver(Solver):
             "poorest_first": self.params.get("poorest_first", 0) == 1,
             "idle_reward": self.params.get("idle_reward", 0) == 1,
             "seed": testing_seed,
+            "penalty_for_invalid_action": self.params["penalty_for_invalid_action"],
             "debug": self.params["debug"]
         }
         env_id = "TaxiEnvBatch{}-v01".format(str(uuid.uuid4()))

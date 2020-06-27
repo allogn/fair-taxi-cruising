@@ -100,6 +100,7 @@ class TestingCallback(BaseCallback):
         self.solver = solver
         self.draw = draw
         self.draw_freq = draw_freq
+        self.rollout_calls = 1
         self.verbose = verbose
 
     def _on_training_start(self) -> None:
@@ -112,6 +113,7 @@ class TestingCallback(BaseCallback):
         if self.eval_freq > 0 and self.rollout_calls % self.eval_freq == 0:
             if_draw = self.draw and self.rollout_calls % self.draw_freq == 0
             self.solver.run_tests(self.rollout_calls // self.eval_freq, draw=if_draw, verbose=self.verbose)
+        self.rollout_calls += 1
         return True
 
 class RobustCallback(BaseCallback):
@@ -120,6 +122,7 @@ class RobustCallback(BaseCallback):
         self.solver = solver
         self.nu = nu
         self.epsilon = epsilon
+        self.rollout_calls = 1
         self.gamma = gamma
         self.cmin = cmin
         self.cmax = cmax
@@ -155,4 +158,4 @@ class RobustCallback(BaseCallback):
         if self.rollout_calls % 3 == 0:
             c = self.find_c()
             self.training_env.env_method("set_income_bound", c)
-            # self.solver.test_env.set_income_bound(c)
+        self.rollout_calls += 1
