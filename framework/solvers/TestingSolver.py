@@ -65,14 +65,26 @@ class TestingSolver(Solver):
             "idle_reward": self.params.get("idle_reward", 0) == 1,
             "seed": testing_seed,
             "penalty_for_invalid_action": self.params["penalty_for_invalid_action"],
+            "discrete": self.params['discrete'],
+            "include_action_mask": self.params['action_mask'],
             "debug": self.params["debug"]
         }
-        env_id = "TaxiEnvBatch{}-v01".format(str(uuid.uuid4()))
-        gym.envs.register(
-            id=env_id,
-            entry_point='gym_taxi.envs:TaxiEnvBatch',
-            kwargs=env_params
-        )
+        if self.params["discrete"] == 1:
+            # use the individual-version gym, with the discrete option
+            env_params["discrete"] = True
+            env_id = "TaxiEnv{}-v01".format(str(uuid.uuid4()))
+            gym.envs.register(
+                id=env_id,
+                entry_point='gym_taxi.envs:TaxiEnv',
+                kwargs=env_params
+            )
+        else:
+            env_id = "TaxiEnvBatch{}-v01".format(str(uuid.uuid4()))
+            gym.envs.register(
+                id=env_id,
+                entry_point='gym_taxi.envs:TaxiEnvBatch',
+                kwargs=env_params
+            )
         self.test_env = gym.make(env_id)
         if len(self.views) == 1:
             self.test_env.set_view(self.views[next(iter(self.views))])

@@ -99,8 +99,11 @@ class GymSolver(TestingSolver):
             "include_income_to_observation": self.params['include_income_to_observation'] == 1,
             "poorest_first": self.params.get("poorest_first", 0) == 1,
             "idle_reward": self.params["idle_reward"], 
+            "include_action_mask": self.params["action_mask"],
             "seed": self.params["seed"],
             "hold_observation": self.params["hold_observation"],
+            "penalty_for_invalid_action": self.params["penalty_for_invalid_action"],
+            "discrete": self.params["discrete"],
             "debug": self.params["debug"]
         }
 
@@ -169,6 +172,12 @@ class GymSolver(TestingSolver):
         self.log['training_time'] = time.time() - t
 
     def predict(self, state, info, nn_state = None):
+        if self.params["discrete"]:
+            # we are using the same type of env
+            action, _state = self.model.predict(state, action_mask=[info['action_mask']])
+            # action is the id of neighbour 
+            return action
+        
         # return bunch of actions given learned state-action for singular taxi
         # state is the one returned by testing environment (multitaxi), and action returned should be for that too
         actions = []
