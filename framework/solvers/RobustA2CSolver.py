@@ -70,13 +70,16 @@ class RobustA2CSolver(cA2CSolver):
         if self.verbose:
             pbar = tqdm(total=self.params["iterations"], desc="Training cA2C (iters)")
 
+        old_c = None
         for n_iter in np.arange(self.params["iterations"]):
             seed = self.params['seed'] + n_iter + 123
             global_step1, global_step2 = self.do_iteration(n_iter, replay, policy_replay, seed, db_save_callback, pbar,
                                                             global_step1, global_step2)
             c = self.find_c(n_iter)
             income_bounds.append(c)
-            self.env.set_income_bound(c)
+            if old_c is None or c > old_c:
+                old_c = c
+            self.env.set_income_bound(old_c)
 
         if self.verbose:
             pbar.close()
