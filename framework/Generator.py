@@ -231,6 +231,14 @@ class Generator:
                             pprice *= 10
                         if self.params["order_distr"] == 'matthew' and i < len(self.G)//2:
                             pprice *= 10
+
+                        if self.params["order_distr"] == "centered":
+                            pprice *= np.abs(i - len(self.G)//2)/len(self.G)
+
+                        if self.params["order_distr"] == "star" and i < 2:
+                            pprice *= 100
+                        
+
                         #assert i == 0 or i == len(self.G)-1
                         #assert j != 0 and j != len(self.G)-1
                         real_orders.append([i, j, tt, max([int(pprice),1]), pprice]) # time required for travelling is equal to number of hops, equal to price
@@ -256,7 +264,7 @@ class Generator:
                     p_target = 1 - (abs((n-1)/2 - j % n)/n) - (abs((n-1)/2 - j // n)/n)
                     random_average[i,j] *= (p_source*0.8 + p_target*0.2) / 2
             random_average = random_average / np.max(random_average)
-            random_average *= density * (1.5 - random_state.random())
+            random_average *= density * (random_state.random())
 
         if distr_type == "airport":
             random_average = np.zeros((N,N))
@@ -317,7 +325,7 @@ class Generator:
         random_average_down = np.zeros((max_ind+1, N))
         for i in [0, n_small-1, n*(n_small-1), max_ind]:
             random_average_top[i,:] = Generator.get_random_matthew_target(n_small, N, random_state, density)
-            random_average_down[i,:] = Generator.get_random_matthew_target(n_small, N, random_state, density, True)
+            random_average_down[i,:] = Generator.get_random_matthew_target(n_small, N, random_state, density*5, True)
 
         random_average = np.zeros((N,N))
         random_average[:max_ind+1,:] = random_average_top
