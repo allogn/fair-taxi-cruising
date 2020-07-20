@@ -38,7 +38,7 @@ class GymSolver(TestingSolver):
             num_cpu = 1 # One current limitation of recurrent policies is that you must test them with the same number of environments they have been trained on.
         else:
             Policy = MlpPolicy
-            nminibatches = 4
+            nminibatches = 16
             num_cpu = self.params['num_cpu']
         # Create the vectorized environment
         self.train_env = SubprocVecEnv([self.make_env(env_id, i, seed+i, self.views, self.env_params) for i in range(num_cpu)])
@@ -49,6 +49,7 @@ class GymSolver(TestingSolver):
         # self.test_env_native = SubprocVecEnv([self.make_env(env_id, 1, seed+num_cpu+1, self.env_params)])
         # self.test_env_native = VecNormalize(self.test_env_native, norm_obs=False, norm_reward=False)
         policy_params=[0, dict(pi=[128, 64, 32], vf=[128, 64, 32])] # 0 - shared layers
+        # policy_params = [128, 64, 32]
         self.model = self.Model(Policy, self.train_env,
                                 gamma=self.params['gamma'], ent_coef=self.params['ent_coef'],
                                 learning_rate=self.params['learning_rate'], vf_coef=self.params['vf_coef'],
@@ -57,7 +58,7 @@ class GymSolver(TestingSolver):
                                 seed=seed, verbose=0, nminibatches=nminibatches, 
                                 policy_kwargs={"net_arch": policy_params},
                                 tensorboard_log=self.log_dir, full_tensorboard_log=False,
-                                n_steps=self.params['dataset']['time_periods']*self.params['dataset']['graph_size'])
+                                n_steps=self.params['dataset']['time_periods']*self.params['dataset']['number_of_cars'])
 
         # number of steps might be very large, because it might have to go through all nodes
 
