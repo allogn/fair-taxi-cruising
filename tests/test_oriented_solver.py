@@ -31,7 +31,9 @@ class TestOrientedSolver:
             "training_iterations": 10,
             "testing_epochs": 2,
             "seed": 0,
-            "debug": 1
+            "debug": 1,
+            "penalty_for_invalid_action": 1000,
+            "discrete": 0
         }
 
         solver = OrientedSolver(**solver_params)

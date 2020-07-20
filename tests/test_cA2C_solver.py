@@ -25,7 +25,10 @@ class TestcA2CSolver:
             "testing_epochs": 2,
             "draw": 0,
             "seed": 0,
-            "debug": 1
+            "debug": 1,
+            "penalty_for_invalid_action": 1000,
+            "discrete": 0,
+            "entropy_coef": 0.01
         }
 
     def test_include_observation(self):

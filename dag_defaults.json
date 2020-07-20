@@ -26,7 +26,8 @@
         "idle_reward": 0,
         "hold_observation": 1,
         "draw_freq": 2,
-        "draw": 1
+        "draw": 1,
+        "entropy_coef": 0.01
       },
       "Gym": {
         "num_cpu": 4,
@@ -57,7 +58,8 @@
         "robust_cmin": 0,
         "robust_cmax": 500,
         "robust_gamma": 0.3,
-        "action_mask": 1
+        "action_mask": 1,
+        "discrete": 0
       },
       "No": {},
       "Diff": {},
@@ -99,7 +101,8 @@
       "wc": 0.1,
       "testing_epochs": 20,
       "count_neighbors": 1,
-      "penalty_for_invalid_action": 1000
+      "penalty_for_invalid_action": 1000,
+      "discrete": 0
     },
     "full_rerun": 1,
     "DEBUG": 0,

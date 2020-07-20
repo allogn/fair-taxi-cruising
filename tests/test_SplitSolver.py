@@ -80,7 +80,9 @@ class TestSplitSolver:
             "shrinking_fraction": 0.9,
             "subsolver": "Diff",
             "debug": 1,
-            "seed": 123
+            "seed": 123,
+            'penalty_for_invalid_action': 1000,
+            "discrete": 0
         }
         solv = SplitSolver(**params)
         solv.init_subsolvers()

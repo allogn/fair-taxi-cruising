@@ -21,7 +21,7 @@ class TestingSolver(Solver):
         self.days = self.params['dataset']["days"]
         self.load_dataset()
         self.init_gym(self.params['seed'])
-        self.seed(self.params['seed'])
+        self.seed(self.params['seed']+999)
 
         # tf logging
         # self.artist = Artist()
@@ -65,13 +65,12 @@ class TestingSolver(Solver):
             "idle_reward": self.params.get("idle_reward", 0) == 1,
             "seed": testing_seed,
             "penalty_for_invalid_action": self.params["penalty_for_invalid_action"],
-            "discrete": self.params['discrete'],
-            "include_action_mask": self.params['action_mask'],
             "debug": self.params["debug"]
         }
         if self.params["discrete"] == 1:
             # use the individual-version gym, with the discrete option
-            env_params["discrete"] = True
+            env_params['discrete'] = True
+            env_params['action_mask'] = self.params['action_mask'] == 1
             env_id = "TaxiEnv{}-v01".format(str(uuid.uuid4()))
             gym.envs.register(
                 id=env_id,
@@ -124,7 +123,7 @@ class TestingSolver(Solver):
         while not done:
             action = self.predict(state, info)
             state, reward, done, info = self.test_env.step(action)
-            if draw:
+            if draw and info['time_updated']:
                 fig = self.test_env.render('fig')
                 fig_dir = os.path.join(self.log_dir, str(training_iter))
                 self.fm.create_path(fig_dir)

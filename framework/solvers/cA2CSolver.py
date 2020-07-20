@@ -88,7 +88,7 @@ class cA2CSolver(TestingSolver):
         assert len(view_network) == len(self.env.view_to_full_ind)
         assert int(np.max([d for n, d in view_network.degree()])) + 1 == self.env.action_space_shape[0]
 
-        self.q_estimator = Estimator(self.sess, view_network, self.time_periods, self.params['seed'],
+        self.q_estimator = Estimator(self.sess, view_network, self.time_periods, self.params['seed'], self.params['entropy_coef'],
                                         scope=self.get_solver_signature(), summary_dir=self.log_dir, wc=self.params["wc"],
                                         include_income = self.params['include_income_to_observation'] == 1)
         self.stateprocessor = stateProcessor(self.q_estimator.action_dim, self.q_estimator.n_valid_grid, self.time_periods,

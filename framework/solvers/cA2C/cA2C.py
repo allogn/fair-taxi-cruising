@@ -20,6 +20,7 @@ class Estimator:
                  world,
                  n_intervals,
                  seed,
+                 entropy_coef,
                  scope="estimator",
                  summary_dir=None,
                  wc=0,
@@ -30,6 +31,7 @@ class Estimator:
         self.world = world
         self.seed(seed)
         self.include_income = include_income
+        self.entropy_coef = entropy_coef
 
         self.T = n_intervals
         self.action_dim = int(np.max([d for n, d in world.degree()])) + 1 # last one always means staying
@@ -137,7 +139,7 @@ class Estimator:
         self.actor_loss = tf.reduce_mean(tf.reduce_sum(self.neglogprob * self.tfadv, axis=1))
         self.entropy = - tf.reduce_mean(self.softmaxprob * self.logsoftmaxprob)
 
-        self.policy_loss = self.actor_loss - 0.01 * self.entropy
+        self.policy_loss = self.actor_loss - self.entropy_coef * self.entropy # 0.01 is default
 
         self.policy_train_op = tf.train.AdamOptimizer(self.loss_lr).minimize(self.policy_loss)
         return self.actor_loss, self.entropy
