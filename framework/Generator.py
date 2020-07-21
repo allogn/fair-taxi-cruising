@@ -183,7 +183,8 @@ class Generator:
     def generate_drivers(self):
         idle_driver_locations = np.zeros((self.params["time_periods"], len(self.G)), dtype=int)
         for t in np.arange(self.params["time_periods"]):
-            d = Counter(self.random.choice(len(self.G), self.params["number_of_cars"]))
+            # d = Counter(self.random.choice(len(self.G), self.params["number_of_cars"]))
+            d = {self.params['n']-1: 1, len(self.G)-self.params['n']: 1}
             for k, val in d.items():
                 idle_driver_locations[t, k] = val
 
@@ -215,18 +216,21 @@ class Generator:
             r = self.get_random_average_orders(self.params["order_distr"], 
                                                 self.params["orders_density"], 
                                                 self.G, self.random, self.params.get('n', None))
+            if hour > 0:
+                r = np.zeros(r.shape)
             random_average.append(r)
             expected_demand = np.sum(random_average[-1],axis=1) # summation over destination
 
         real_orders = []
         for tt in np.arange(self.params["days"] * self.params["time_periods"]):
             hour = (tt % self.params["time_periods"]) // self.params["time_periods_per_hour"]
-            trips_per_cell = self.random.poisson(random_average[hour])
+            trips_per_cell = random_average[hour] > 0 # self.random.poisson(random_average[hour])
             for i in range(len(self.G)):
                 for j in range(len(self.G)):
                     for trip in range(trips_per_cell[i,j]):
+                        print(i,j,trip)
                         # origin grid, destination grid, start time, duration, price
-                        pprice = self.dist[i,j]
+                        pprice = 50#self.dist[i,j]
                         if self.params["order_distr"] == 'airport' and i == 0:
                             pprice *= 10
                         if self.params["order_distr"] == 'matthew' and i < len(self.G)//2:
@@ -236,13 +240,16 @@ class Generator:
                             pprice *= np.abs(i - len(self.G)//2)/len(self.G)
 
                         if self.params["order_distr"] == "star" and i < 2:
-                            pprice *= 100
+                            pprice *= 3
+
+                        if self.params["order_distr"] == "star" and i > 2 and i < len(self.G)-1:
+                            pprice *= 0 # only count corner orders
                         
 
                         #assert i == 0 or i == len(self.G)-1
                         #assert j != 0 and j != len(self.G)-1
                         real_orders.append([i, j, tt, max([int(pprice),1]), pprice]) # time required for travelling is equal to number of hops, equal to price
-
+        print(real_orders)
         with open(os.path.join(self.data_path, "real_orders.pkl"), "wb") as f:
             pkl.dump(real_orders, f)
 
@@ -289,7 +296,9 @@ class Generator:
                 c = n[1]['coords']
                 if c == center_node_coords:
                     center = n[0]
-                if (c[0] in x_lim and c[1] in y_lim) and (n[0] not in corners) and (n[0] != center):
+                # if (c[0] in x_lim and c[1] in y_lim) and (n[0] not in corners) and (n[0] != center):
+                #     corners.append(n[0])
+                if ((c[0] == x_lim[0]) and (c[1] == y_lim[0])) or ((c[0] == x_lim[1]) and (c[1] == y_lim[1])):
                     corners.append(n[0])
             assert center is not None, "No node with coords {}".format(center_node_coords)
             assert len(corners) > 0, "No corners for x_lim {} and y_lim {}".format(x_lim, y_lim)

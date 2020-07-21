@@ -187,6 +187,10 @@ class cA2CSolver(TestingSolver):
             batch_reward_gmv.append(new_reward)
             loop_n += 1
 
+        print("done")
+        for d in self.env.all_driver_list:
+            print(d)
+
         episode_info = self.env.get_episode_info()
         w = EpisodeStatsLogger(self.stats_summary_writer)
         w.write(episode_info, n_iter)
