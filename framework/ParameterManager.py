@@ -98,7 +98,7 @@ class ParameterManager:
                         for i in range(len(param_names)):
                             solver_case_dict[param_names[i]] = param_set[i]
                         for k in problem_param_set:
-                            assert k not in solver_case_dict, "Problem and Solver params are overlapping"
+                            assert k not in solver_case_dict, ("Problem and Solver params are overlapping", k)
                         solver_case_dict.update(problem_param_set)
                         sets.append(solver_case_dict)
         return sets

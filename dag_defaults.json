@@ -59,7 +59,8 @@
         "robust_cmax": 500,
         "robust_gamma": 0.3,
         "action_mask": 1,
-        "discrete": 0
+        "discrete": 0,
+        "batch_env": 0
       },
       "No": {},
       "Diff": {},
@@ -101,8 +102,7 @@
       "wc": 0.1,
       "testing_epochs": 20,
       "count_neighbors": 1,
-      "penalty_for_invalid_action": 1000,
-      "discrete": 0
+      "penalty_for_invalid_action": 1000
     },
     "full_rerun": 1,
     "DEBUG": 0,

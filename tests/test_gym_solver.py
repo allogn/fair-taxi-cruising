@@ -44,7 +44,8 @@ class TestGymSolver:
             "training_iterations": 1000, # check testing while training
             "penalty_for_invalid_action": 0,
             "discrete": 0,
-            "action_mask": 1
+            "action_mask": 1,
+            "batch_env": 0
         }
 
     def get_generator_params(self):
@@ -84,24 +85,51 @@ class TestGymSolver:
             pass
         solver.run(fake_save_callback)
 
+    # @pytest.mark.skip
+    def test_basic_training_batch(self):
+        '''
+        Test if training on trivial parameter set does not fail 
+        if PPO uses TaxiEnvBatch
+        '''
+        generator_params = self.get_generator_params()
+        gen = Generator("testGymSolver", generator_params)
+        graph_info = gen.generate()
+        world_graph, idle_driver_locations, real_orders, \
+            onoff_driver_locations, random_average, dist = gen.load_complete_set()
+
+        # use OrigSolver as wrapper for params
+        solver_params = self.get_solver_params(graph_info)
+        solver_params['batch_env'] = 1
+
+        solver = GymSolver(**solver_params)
+        solver.train()
+
+        solver_params["include_income_to_observation"] = 1
+        solver = GymSolver(**solver_params)
+
+        def fake_save_callback(result):
+            pass
+        solver.run(fake_save_callback)
+
     ### discrete do not work so far
-    # def test_discrete(self):
-    #     generator_params = self.get_generator_params()
-    #     gen = Generator("testGymSolver", generator_params)
-    #     graph_info = gen.generate()
-    #     world_graph, idle_driver_locations, real_orders, \
-    #         onoff_driver_locations, random_average, dist = gen.load_complete_set()
+    @pytest.mark.skip
+    def test_discrete(self):
+        generator_params = self.get_generator_params()
+        gen = Generator("testGymSolver", generator_params)
+        graph_info = gen.generate()
+        world_graph, idle_driver_locations, real_orders, \
+            onoff_driver_locations, random_average, dist = gen.load_complete_set()
 
-    #     # use OrigSolver as wrapper for params
-    #     solver_params = self.get_solver_params(graph_info)
-    #     solver_params['discrete'] = 1
+        # use OrigSolver as wrapper for params
+        solver_params = self.get_solver_params(graph_info)
+        solver_params['discrete'] = 1
 
-    #     solver = GymSolver(**solver_params)
-    #     solver.train()
+        solver = GymSolver(**solver_params)
+        solver.train()
 
-    #     solver_params["include_income_to_observation"] = 1
-    #     solver = GymSolver(**solver_params)
+        solver_params["include_income_to_observation"] = 1
+        solver = GymSolver(**solver_params)
 
-    #     def fake_save_callback(result):
-    #         pass
-    #     solver.run(fake_save_callback)
+        def fake_save_callback(result):
+            pass
+        solver.run(fake_save_callback)

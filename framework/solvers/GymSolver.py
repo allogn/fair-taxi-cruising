@@ -38,7 +38,7 @@ class GymSolver(TestingSolver):
             num_cpu = 1 # One current limitation of recurrent policies is that you must test them with the same number of environments they have been trained on.
         else:
             Policy = MlpPolicy
-            nminibatches = 16
+            nminibatches = 1 # 16
             num_cpu = self.params['num_cpu']
         # Create the vectorized environment
         self.train_env = SubprocVecEnv([self.make_env(env_id, i, seed+i, self.views, self.env_params) for i in range(num_cpu)])
@@ -121,10 +121,14 @@ class GymSolver(TestingSolver):
         :param seed: (int) the inital seed for RNG
         :param rank: (int) index of the subprocess
         """
+        if self.params['batch_env']:
+            entry_point = 'gym_taxi.envs:TaxiEnvBatch'
+        else:
+            entry_point = 'gym_taxi.envs:TaxiEnv'
         def _init():
             gym.envs.register(
                 id=env_id,
-                entry_point='gym_taxi.envs:TaxiEnv',
+                entry_point=entry_point,
                 kwargs=env_params
             ) # must be in make_env because otherwise doesn't work
             env = gym.make(env_id)
@@ -191,13 +195,22 @@ class GymSolver(TestingSolver):
                 assert state[:-positions_for_income].shape == ((3*len(self.world)+self.time_periods),)
                 assert state[-positions_for_income:].shape[0] == positions_for_income
                 assert self.train_env.observation_space.shape == (5*len(self.world)+self.time_periods,)
-                obs = np.concatenate((state[:-positions_for_income], onehot_nodeid, state[-positions_for_income:]))
-                assert obs.shape[0] == 5*len(self.world)+self.time_periods
+
+                if self.params['batch_env']:
+                    obs = np.concatenate((state[:-positions_for_income], state[-positions_for_income:]))
+                    assert obs.shape[0] == 4*len(self.world)+self.time_periods
+                else:
+                    obs = np.concatenate((state[:-positions_for_income], onehot_nodeid, state[-positions_for_income:]))
+                    assert obs.shape[0] == 5*len(self.world)+self.time_periods
             else:
                 assert not self.test_env.include_income_to_observation
                 assert state.shape == (3*len(self.world)+self.time_periods,)
-                obs = np.concatenate((state, onehot_nodeid))
-                assert obs.shape[0] == 4*len(self.world)+self.time_periods
+                if self.params['batch_env']:
+                    obs = state
+                    assert obs.shape[0] == 3*len(self.world)+self.time_periods
+                else:
+                    obs = np.concatenate((state, onehot_nodeid))
+                    assert obs.shape[0] == 4*len(self.world)+self.time_periods
 
             if self.params.get("lstm", 0) == 1:
                 raise NotImplementedError("The problem is how to combine last states of NN from different graph nodes")
