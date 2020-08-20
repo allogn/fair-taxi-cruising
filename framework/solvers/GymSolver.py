@@ -6,6 +6,7 @@ import shutil
 import gym
 import time
 import logging
+import tensorflow as tf
 
 from stable_baselines import A2C, PPO2, ACKTR
 from stable_baselines.common.vec_env import SubprocVecEnv, VecNormalize
@@ -24,14 +25,23 @@ class GymSolver(TestingSolver):
     def __init__(self, **params):
         super().__init__(**params)
         self.Model = PPO2
+        num_cpu = self.params['num_cpu']
 
         # parameters from our config, not the original one
         self.days = self.params['dataset']["days"]
-        env_id = "TaxiEnv-v01"
+        env_id = "TaxiEnvBatch-v01"
         self.env_params = self.load_env_params()
 
         seed = self.params['seed']
+        # Create the vectorized environment
+        self.train_env = SubprocVecEnv([self.make_env(env_id, i, seed+i, self.views, self.env_params) for i in range(num_cpu)])
+        self.train_env = VecNormalize(self.train_env, norm_obs=True, norm_reward=True)
 
+        # testing not implemented so far
+        # self.test_env_native = SubprocVecEnv([self.make_env(env_id, 1, seed+num_cpu+1, self.env_params)])
+        # self.test_env_native = VecNormalize(self.test_env_native, norm_obs=False, norm_reward=False)
+
+    def init_model(self, run_id):
         if self.params.get("lstm", 0) == 1:
             Policy = MlpLstmPolicy
             nminibatches = 1
@@ -40,15 +50,19 @@ class GymSolver(TestingSolver):
             Policy = MlpPolicy
             nminibatches = 1 # 16
             num_cpu = self.params['num_cpu']
-        # Create the vectorized environment
-        self.train_env = SubprocVecEnv([self.make_env(env_id, i, seed+i, self.views, self.env_params) for i in range(num_cpu)])
 
-        self.train_env = VecNormalize(self.train_env, norm_obs=False, norm_reward=False)
-
-        # testing not implemented so far
-        # self.test_env_native = SubprocVecEnv([self.make_env(env_id, 1, seed+num_cpu+1, self.env_params)])
-        # self.test_env_native = VecNormalize(self.test_env_native, norm_obs=False, norm_reward=False)
         policy_params=[0, dict(pi=[128, 64, 32], vf=[128, 64, 32])] # 0 - shared layers
+        seed = self.params['seed'] + run_id
+        self.log_dir = os.path.join(self.base_log_dir, str(run_id))
+
+        # appearantly TB does not "like" several event files in the same directory,
+        # so testing should be in another dir (https://stackoverflow.com/questions/45890560/tensorflow-found-more-than-one-graph-event-per-run)
+        test_path = os.path.join(self.dpath,self.get_solver_signature() + "_test", str(run_id))
+        self.test_tf_writer = tf.summary.FileWriter(test_path)
+        self.log['log_dir'] = self.base_log_dir
+        self.log['log_dir_test'] = test_path
+        self.log['log_dir_stats'] = os.path.join(self.dpath,self.get_solver_signature() + "_stats", str(run_id)) # used for tensorboard logs during training
+
         # policy_params = [128, 64, 32]
         self.model = self.Model(Policy, self.train_env,
                                 gamma=self.params['gamma'], ent_coef=self.params['ent_coef'],
@@ -71,7 +85,8 @@ class GymSolver(TestingSolver):
             "normalize_rewards": self.params['normalize_rewards'] == 1,
             "minimum_reward": self.params['minimum_reward'] == 1,
             "include_income_to_observation": self.params['include_income_to_observation'] == 1,
-            "poorest_first": self.params.get("poorest_first", 0) == 1
+            "poorest_first": self.params.get("poorest_first", 0) == 1,
+            "robust": self.params['robust'] == 1
         }
         if self.params.get("lstm", 0) == 1:
             footprint_params['lstm'] = True
@@ -105,6 +120,8 @@ class GymSolver(TestingSolver):
             "hold_observation": self.params["hold_observation"],
             "penalty_for_invalid_action": self.params["penalty_for_invalid_action"],
             "discrete": self.params["discrete"],
+            "bounded_income": self.params["robust"] == 1,
+            "fully_collaborative": self.params["batch_env"] == 1,
             "debug": self.params["debug"]
         }
 
@@ -139,7 +156,7 @@ class GymSolver(TestingSolver):
         set_global_seeds(seed)
         return _init
 
-    def get_callback(self, db_save_callback):
+    def get_callback(self, db_save_callback, run_id):
         """
         Callback called at each step (for DQN an others) or after n steps (see ACER or PPO2)
         :param _locals: (dict)
@@ -172,8 +189,10 @@ class GymSolver(TestingSolver):
         if db_save_callback is not None:
             db_save_callback(self.log)
         t = time.time()
-        self.model.learn(total_timesteps=self.params['training_iterations'], tb_log_name="",
-                        callback=self.get_callback(db_save_callback))
+        for run_id in range(self.params['runs']):
+            self.init_model(run_id)
+            self.model.learn(total_timesteps=self.params['training_iterations'], tb_log_name="",
+                            callback=self.get_callback(db_save_callback, run_id))
         self.log['training_time'] = time.time() - t
 
     def predict(self, state, info, nn_state = None):

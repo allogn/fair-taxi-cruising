@@ -26,22 +26,13 @@ class TestingSolver(Solver):
         # tf logging
         # self.artist = Artist()
         self.fm = FileManager(self.params['tag'])
-        self.log_dir = os.path.join(self.dpath,self.get_solver_signature())
-        self.fm.create_path(self.log_dir)
+        self.base_log_dir = os.path.join(self.dpath,self.get_solver_signature())
+        self.fm.create_path(self.base_log_dir)
         # tf.reset_default_graph()  # important! logging works weirdly otherwise, creates separate plots per iteration
         # # also important to reset before session, not after
 
         # self.sess = tf.Session()
 
-
-        # appearantly TB does not "like" several event files in the same directory,
-        # so testing should be in another dir (https://stackoverflow.com/questions/45890560/tensorflow-found-more-than-one-graph-event-per-run)
-        test_path = os.path.join(self.dpath,self.get_solver_signature() + "_test")
-        self.test_tf_writer = tf.summary.FileWriter(test_path)
-        self.log['log_dir'] = self.log_dir
-        self.log['log_dir_test'] = test_path
-        self.log['log_dir_stats'] = os.path.join(self.dpath,self.get_solver_signature() + "_stats") # used for tensorboard logs during training
-        
         # self.epoch_stats = {}
         # self.summaries = None
 
@@ -63,6 +54,7 @@ class TestingSolver(Solver):
             "include_income_to_observation": self.params.get('include_income_to_observation', 0) == 1,
             "poorest_first": self.params.get("poorest_first", 0) == 1,
             "idle_reward": self.params.get("idle_reward", 0) == 1,
+            "include_action_mask": self.params["action_mask"] == 1,
             "seed": testing_seed,
             "penalty_for_invalid_action": self.params["penalty_for_invalid_action"],
             "debug": self.params["debug"]
@@ -70,7 +62,6 @@ class TestingSolver(Solver):
         if self.params["discrete"] == 1:
             # use the individual-version gym, with the discrete option
             env_params['discrete'] = True
-            env_params['action_mask'] = self.params['action_mask'] == 1
             env_id = "TaxiEnv{}-v01".format(str(uuid.uuid4()))
             gym.envs.register(
                 id=env_id,

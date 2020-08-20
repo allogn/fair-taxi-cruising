@@ -60,7 +60,8 @@
         "robust_gamma": 0.3,
         "action_mask": 1,
         "discrete": 0,
-        "batch_env": 0
+        "batch_env": 0,
+        "runs": 1
       },
       "No": {},
       "Diff": {},

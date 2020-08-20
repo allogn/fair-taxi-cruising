@@ -107,7 +107,8 @@ class TestingCallback(BaseCallback):
         """
         This method is called before the first rollout starts.
         """
-        self.solver.run_tests(0, draw=self.draw, verbose=self.verbose)
+        if self.eval_freq > 0:
+            self.solver.run_tests(0, draw=self.draw, verbose=self.verbose)
 
     def _on_rollout_end(self) -> bool:
         if self.eval_freq > 0 and self.rollout_calls % self.eval_freq == 0:
@@ -127,8 +128,10 @@ class RobustCallback(BaseCallback):
         self.cmin = cmin
         self.cmax = cmax
         self.call = 0
+        self.last_min = []
 
     def find_c(self):
+        logging.info("Finding c")
         cmin = self.cmin
         cmax = self.cmax
         c = (cmax + cmin) / 2
@@ -154,8 +157,13 @@ class RobustCallback(BaseCallback):
 
         return c
 
+    # def _on_training_start(self):
+    #     self.training_env.env_method("auto_update_income_bound")
+
     def _on_rollout_end(self) -> bool:
-        if self.rollout_calls % 3 == 0:
-            c = self.find_c()
-            self.training_env.env_method("set_income_bound", c)
+        # if self.rollout_calls % 3 == 0:
+        # c = self.find_c()
+        # self.training_env.env_method("set_income_bound", c)
+        # self.training_env.env_method("auto_update_income_bound") # note that there are SEVERAL envs! each might have its own bound!
+        
         self.rollout_calls += 1
