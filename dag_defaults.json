@@ -27,7 +27,10 @@
         "hold_observation": 1,
         "draw_freq": 2,
         "draw": 1,
-        "entropy_coef": 0.01
+        "entropy_coef": 0.01,
+        "action_mask": 0,
+        "discrete": 0,
+        "eval_freq": 0
       },
       "Gym": {
         "num_cpu": 4,

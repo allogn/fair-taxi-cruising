@@ -89,7 +89,7 @@ class cA2CSolver(TestingSolver):
         assert int(np.max([d for n, d in view_network.degree()])) + 1 == self.env.action_space_shape[0]
 
         self.q_estimator = Estimator(self.sess, view_network, self.time_periods, self.params['seed'], self.params['entropy_coef'],
-                                        scope=self.get_solver_signature(), summary_dir=self.log_dir, wc=self.params["wc"],
+                                        scope=self.get_solver_signature(), summary_dir=self.base_log_dir, wc=self.params["wc"],
                                         include_income = self.params['include_income_to_observation'] == 1)
         self.stateprocessor = stateProcessor(self.q_estimator.action_dim, self.q_estimator.n_valid_grid, self.time_periods,
                                     self.params['include_income_to_observation'] == 1)
@@ -98,7 +98,7 @@ class cA2CSolver(TestingSolver):
         self.saver = tf.train.Saver(max_to_keep=5)
         if self.params.get('mode','Train') == "Test":
             iter = self.params["iterations"]-1 # load model of the last iteration
-            self.saver.restore(self.sess, os.path.join(self.log_dir,"{}_model{}.ckpt".format(self.get_solver_signature(), iter)))
+            self.saver.restore(self.sess, os.path.join(self.base_log_dir,"{}_model{}.ckpt".format(self.get_solver_signature(), iter)))
         tf.reset_default_graph()
 
     def do_iteration(self, n_iter, replay, policy_replay, seed, 
@@ -134,7 +134,7 @@ class cA2CSolver(TestingSolver):
             
             new_action = self.action_from_valid_prob(valid_action_prob_mat)
             observation, new_reward, done, new_info = self.env.step(new_action)
-            assert new_info['unmasked_penalty'] == 0
+            assert new_info.get('unmasked_penalty',0) == 0 # key might not be there if cold start, for example
             
             next_state, info, income_mat = self.observation_to_old_fashioned_info(observation, new_info)
             # immediate_reward = self.stateprocessor.reward_wrapper(info, curr_s) -- outdated, do not count neighbors, env provide averaging inside
@@ -193,10 +193,11 @@ class cA2CSolver(TestingSolver):
         self.log["time_rollout"] += time.time() - time_rollout
 
         # running tests
-        time_tests = time.time()
-        if_draw = (self.params['draw'] == 1) and (n_iter % self.params['draw_freq'] == 0)
-        self.run_tests(n_iter+1, draw=if_draw, verbose=0)
-        self.log["time_tests"] += time.time() - time_tests
+        if self.params["eval_freq"] > 0:
+            time_tests = time.time()
+            if_draw = (self.params['draw'] == 1) and (n_iter % self.params['draw_freq'] == 0)
+            self.run_tests(n_iter+1, draw=if_draw, verbose=0)
+            self.log["time_tests"] += time.time() - time_tests
 
         time_batch = time.time()
         # update value network
@@ -214,7 +215,7 @@ class cA2CSolver(TestingSolver):
             global_step2 += 1
         self.log['time_batch'] += time.time() - time_batch
 
-        self.saver.save(self.sess, os.path.join(self.log_dir,"{}_model{}.ckpt".format(self.get_solver_signature(), n_iter)))
+        self.saver.save(self.sess, os.path.join(self.base_log_dir,"{}_model{}.ckpt".format(self.get_solver_signature(), n_iter)))
         if self.verbose:
             pbar.update()
 
@@ -238,7 +239,8 @@ class cA2CSolver(TestingSolver):
         self.log['time_tests'] = 0
 
         # do preliminary test run
-        self.run_tests(0, draw=self.params['draw'] == 1, verbose=0)
+        if self.params["eval_freq"] > 0:
+            self.run_tests(0, draw=self.params['draw'] == 1, verbose=0)
 
         if self.verbose:
             pbar = tqdm(total=self.params["iterations"], desc="Training cA2C (iters)")
