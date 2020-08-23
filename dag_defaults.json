@@ -104,11 +104,12 @@
     },
     "problem": {
       "wc": 0.1,
-      "testing_epochs": 20,
+      "testing_epochs": 1,
       "count_neighbors": 1,
       "penalty_for_invalid_action": 1000
     },
     "full_rerun": 1,
     "DEBUG": 0,
-    "seed": 123
+    "seed": 123,
+    "runs": 1
 }

@@ -227,8 +227,12 @@ class Generator:
                     for trip in range(trips_per_cell[i,j]):
                         # origin grid, destination grid, start time, duration, price
                         pprice = self.dist[i,j]
-                        if self.params["order_distr"] == 'airport' and i == 0:
-                            pprice *= 10
+                        if self.params["order_distr"] == 'airport':
+                            if tt < self.params["time_periods_per_hour"] // 2 and i == 0:
+                                pprice *= 10
+                            else:
+                                if i > 1:
+                                    pprice *= 10
                         if self.params["order_distr"] == 'matthew' and i < len(self.G)//2:
                             pprice *= 10
 

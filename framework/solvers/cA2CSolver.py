@@ -28,7 +28,7 @@ class cA2CSolver(TestingSolver):
         self.init()
         self.log['init_time'] = time.time() - t1
 
-        self.stats_summary_writer = tf.summary.FileWriter(os.path.join(self.dpath,self.get_solver_signature() + "_stats"))
+        self.stats_summary_writer = tf.summary.FileWriter(self.log['log_dir_stats'])
 
     def get_env_params(self):
         env_params = {
@@ -89,7 +89,7 @@ class cA2CSolver(TestingSolver):
         assert int(np.max([d for n, d in view_network.degree()])) + 1 == self.env.action_space_shape[0]
 
         self.q_estimator = Estimator(self.sess, view_network, self.time_periods, self.params['seed'], self.params['entropy_coef'],
-                                        scope=self.get_solver_signature(), summary_dir=self.base_log_dir, wc=self.params["wc"],
+                                        scope=self.get_solver_signature(), summary_dir=self.log_dir, wc=self.params["wc"],
                                         include_income = self.params['include_income_to_observation'] == 1)
         self.stateprocessor = stateProcessor(self.q_estimator.action_dim, self.q_estimator.n_valid_grid, self.time_periods,
                                     self.params['include_income_to_observation'] == 1)
@@ -98,7 +98,7 @@ class cA2CSolver(TestingSolver):
         self.saver = tf.train.Saver(max_to_keep=5)
         if self.params.get('mode','Train') == "Test":
             iter = self.params["iterations"]-1 # load model of the last iteration
-            self.saver.restore(self.sess, os.path.join(self.base_log_dir,"{}_model{}.ckpt".format(self.get_solver_signature(), iter)))
+            self.saver.restore(self.sess, os.path.join(self.log_dir,"{}_model{}.ckpt".format(self.get_solver_signature(), iter)))
         tf.reset_default_graph()
 
     def do_iteration(self, n_iter, replay, policy_replay, seed, 
@@ -215,7 +215,7 @@ class cA2CSolver(TestingSolver):
             global_step2 += 1
         self.log['time_batch'] += time.time() - time_batch
 
-        self.saver.save(self.sess, os.path.join(self.base_log_dir,"{}_model{}.ckpt".format(self.get_solver_signature(), n_iter)))
+        self.saver.save(self.sess, os.path.join(self.log_dir,"{}_model{}.ckpt".format(self.get_solver_signature(), n_iter)))
         if self.verbose:
             pbar.update()
 

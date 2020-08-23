@@ -41,7 +41,7 @@ class GymSolver(TestingSolver):
         # self.test_env_native = SubprocVecEnv([self.make_env(env_id, 1, seed+num_cpu+1, self.env_params)])
         # self.test_env_native = VecNormalize(self.test_env_native, norm_obs=False, norm_reward=False)
 
-    def init_model(self, run_id):
+    def init_model(self):
         if self.params.get("lstm", 0) == 1:
             Policy = MlpLstmPolicy
             nminibatches = 1
@@ -52,16 +52,8 @@ class GymSolver(TestingSolver):
             num_cpu = self.params['num_cpu']
 
         policy_params=[0, dict(pi=[128, 64, 32], vf=[128, 64, 32])] # 0 - shared layers
-        seed = self.params['seed'] + run_id
-        self.log_dir = os.path.join(self.base_log_dir, str(run_id))
-
-        # appearantly TB does not "like" several event files in the same directory,
-        # so testing should be in another dir (https://stackoverflow.com/questions/45890560/tensorflow-found-more-than-one-graph-event-per-run)
-        test_path = os.path.join(self.dpath,self.get_solver_signature() + "_test", str(run_id))
-        self.test_tf_writer = tf.summary.FileWriter(test_path)
-        self.log['log_dir'] = self.base_log_dir
-        self.log['log_dir_test'] = test_path
-        self.log['log_dir_stats'] = os.path.join(self.dpath,self.get_solver_signature() + "_stats", str(run_id)) # used for tensorboard logs during training
+        seed = self.params['seed']
+        self.log_dir = os.path.join(self.log_dir)
 
         # policy_params = [128, 64, 32]
         self.model = self.Model(Policy, self.train_env,
@@ -156,7 +148,7 @@ class GymSolver(TestingSolver):
         set_global_seeds(seed)
         return _init
 
-    def get_callback(self, db_save_callback, run_id):
+    def get_callback(self, db_save_callback):
         """
         Callback called at each step (for DQN an others) or after n steps (see ACER or PPO2)
         :param _locals: (dict)
@@ -189,10 +181,9 @@ class GymSolver(TestingSolver):
         if db_save_callback is not None:
             db_save_callback(self.log)
         t = time.time()
-        for run_id in range(self.params['runs']):
-            self.init_model(run_id)
-            self.model.learn(total_timesteps=self.params['training_iterations'], tb_log_name="",
-                            callback=self.get_callback(db_save_callback, run_id))
+        self.init_model()
+        self.model.learn(total_timesteps=self.params['training_iterations'], tb_log_name="",
+                        callback=self.get_callback(db_save_callback))
         self.log['training_time'] = time.time() - t
 
     def predict(self, state, info, nn_state = None):

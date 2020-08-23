@@ -135,18 +135,21 @@ def load_tb_summary_as_df(experiment_name, plotting_param, solver_name, solver_k
                     and is_solver_correct(d, solver_name, solver_key_params)]
     if len(dirs) == 0:
         raise Exception("There is no such solver name with such params")
-    if len(dirs) > 1:
-        raise Exception("There are several solvers with such params")
+    # there might be several runs for the same params, and also _stats and not-stats
 
-    data_dir = os.path.join(data_dir, dirs[0])
     list_for_df = []
     # There might be several runs for the same solver
-    for run_id in os.listdir(data_dir):
-        path = os.path.join(data_dir, run_id, "_1")
-        if len(os.listdir(path)) != 1:
-            raise Exception("There are more than one run for the same footprint, \
-                            check that get_footprint_params of the solver has all the variable params")
-        first_file = next(os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)))
+    for run_dir in dirs:
+        run_id = int(run_dir[-1]) # last digit is the run_id
+        path = os.path.join(data_dir, run_dir)
+        files = list(os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)))
+        if len(files) != 1:
+            files = [p for p in files if p.find("events") > -1] # if it is cA2C
+            if len(path) == 0:
+                raise Exception("There are more than one run for the same footprint, \
+                                check that get_footprint_params of the solver has all the variable params. \
+                                Or there is something else wrong.")
+        first_file = files[0]
         for summary in tf.train.summary_iterator(first_file):
             step = summary.step
             serialized = json.loads(MessageToJson(summary.summary))

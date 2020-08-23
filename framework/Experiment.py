@@ -167,39 +167,40 @@ class Experiment:
 
             for d in self.db.dataset.find(q):
                 for solver_params in self.pm.get_solvers_params():
+                    for run_id in range(self.pm.params['runs']):
+                        params_without_rerun = deepcopy(solver_params)
+                        if 'rerun' in params_without_rerun:
+                            del params_without_rerun['rerun']
+                        footprint = ParameterManager.get_param_footprint(params_without_rerun) + "_" + str(run_id)
 
-                    params_without_rerun = deepcopy(solver_params)
-                    if 'rerun' in params_without_rerun:
-                        del params_without_rerun['rerun']
-                    footprint = ParameterManager.get_param_footprint(params_without_rerun)
+                        if solver_params.get("rerun",0) == 1:
+                            q = {"tag": self.tag, "footprint": footprint}
+                            solution = self.db.solution.find_one(q)
+                            if solution is not None:
+                                self.fm.clean_path(solution['log_dir'])
+                                self.fm.clean_path(solution['log_dir_test'])
+                                self.fm.clean_path(solution['log_dir_stats'])
+                                self.db.solution.delete_many(q)
+                                logging.info("Solutions for footprint {} removed.".format(footprint))
+                            else:
+                                logging.info("Solutions for footprint {} was not found.".format(footprint))
 
-                    if solver_params.get("rerun",0) == 1:
-                        q = {"tag": self.tag, "footprint": footprint}
-                        solution = self.db.solution.find_one(q)
-                        if solution is not None:
-                            self.fm.clean_path(solution['log_dir'])
-                            self.fm.clean_path(solution['log_dir_test'])
-                            self.fm.clean_path(solution['log_dir_stats'])
-                            self.db.solution.delete_many(q)
-                            logging.info("Solutions for footprint {} removed.".format(footprint))
-                        else:
-                            logging.info("Solutions for footprint {} was not found.".format(footprint))
+                        all_params = deepcopy(solver_params)
+                        all_params['dataset'] = d
+                        all_params['mode'] = mode
+                        all_params['footprint'] = footprint
+                        all_params['debug'] = self.DEBUG
+                        all_params['seed'] = self.seed + run_id
+                        all_params['tag'] = self.tag
+                        all_params['run_id'] = run_id
+                        if self.db.solution.find_one(all_params) != None:
+                            logging.info("{} of {} for {} exists ({}).".format(mode, solver_params['solver'], self.tag, all_params['footprint']))
+                            continue
+                        if "rerun" in all_params:
+                            del all_params['rerun']
+                        all_params['trained_model_id'] = str(uuid.uuid4())
 
-                    all_params = deepcopy(solver_params)
-                    all_params['dataset'] = d
-                    all_params['mode'] = mode
-                    all_params['footprint'] = footprint
-                    all_params['debug'] = self.DEBUG
-                    all_params['seed'] = self.seed
-                    all_params['tag'] = self.tag
-                    if self.db.solution.find_one(all_params) != None:
-                       logging.info("{} of {} for {} exists ({}).".format(mode, solver_params['solver'], self.tag, all_params['footprint']))
-                       continue
-                    if "rerun" in all_params:
-                        del all_params['rerun']
-                    all_params['trained_model_id'] = str(uuid.uuid4())
-
-                    yield all_params
+                        yield all_params
 
         # test mode is deprecated, testing embedded in training
         if mode == "Test":
