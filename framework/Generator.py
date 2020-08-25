@@ -241,6 +241,9 @@ class Generator:
 
                         if self.params["order_distr"] == "star" and i < 2:
                             pprice *= 100
+
+                        if self.params["order_distr"] == "single_dot":
+                            pprice *= (1+self.random.random()*10)
                         
 
                         #assert i == 0 or i == len(self.G)-1
@@ -276,6 +279,11 @@ class Generator:
             random_average[0,:] = random_state.random((N,))*density/2
             random_average[N-1,:] = random_state.random((N,))*density
             random_average[n-1,:] = random_state.random((N,))*density
+
+        if distr_type == "single_dot":
+            random_average = np.zeros((N,N))
+            random_node = random_state.randint(N)
+            random_average[random_node,:] = density
 
         if distr_type == "star":
             assert N >= 3
