@@ -46,6 +46,7 @@ class cA2CSolver(TestingSolver):
             "poorest_first": self.params.get("poorest_first", 0) == 1,
             "idle_reward": self.params.get("idle_reward", 0) == 1,
             "seed": self.params['seed']+1,
+            "bounded_income": self.params["robust"] == 1,
             "debug": self.params['debug']
         }
         return env_params

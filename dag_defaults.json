@@ -30,7 +30,8 @@
         "entropy_coef": 0.01,
         "action_mask": 0,
         "discrete": 0,
-        "eval_freq": 0
+        "eval_freq": 0,
+        "robust": 0
       },
       "Gym": {
         "num_cpu": 4,
