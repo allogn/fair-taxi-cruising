@@ -276,9 +276,9 @@ class Generator:
         if distr_type == "airport":
             random_average = np.zeros((N,N))
             n = int(np.sqrt(N))
-            random_average[0,:] = random_state.random((N,))*density/2
+            random_average[0,:] = random_state.random((N,))*density
             random_average[N-1,:] = random_state.random((N,))*density
-            random_average[n-1,:] = random_state.random((N,))*density
+            # random_average[n-1,:] = random_state.random((N,))*density
 
         if distr_type == "single_dot":
             random_average = np.zeros((N,N))
