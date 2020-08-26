@@ -61,6 +61,7 @@ class cA2CSolver(TestingSolver):
             "minimum_reward": self.params['minimum_reward'] == 1,
             "include_income_to_observation": self.params['include_income_to_observation'] == 1,
             "poorest_first": self.params.get("poorest_first", 0) == 1,
+            "bounded_income": self.params["robust"] == 1,
             "idle_reward": self.params.get("idle_reward", 0) == 1
         }
         return footprint_params
