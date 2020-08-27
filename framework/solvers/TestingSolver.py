@@ -67,6 +67,7 @@ class TestingSolver(Solver):
             "include_action_mask": self.params.get("action_mask", 0) == 1, # for solvers like "Diff" this param might not be there
             "seed": testing_seed,
             "penalty_for_invalid_action": self.params["penalty_for_invalid_action"],
+            "randomize_drivers": self.params["randomize_drivers"],
             "debug": self.params["debug"]
         }
         if self.params.get("discrete",0) == 1:

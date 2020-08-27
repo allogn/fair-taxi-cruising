@@ -55,6 +55,11 @@ class GymSolver(TestingSolver):
         seed = self.params['seed']
         self.log_dir = os.path.join(self.log_dir)
 
+        n_steps = (self.params['dataset']['time_periods']+1)
+        # n_steps is time_periods + 1 because we have the cold-start, which is a fake iteration.
+        if not self.params['discrete'] or not self.params['batch_env']:
+            n_steps = n_steps*self.params['dataset']['number_of_cars']
+
         # policy_params = [128, 64, 32]
         self.model = self.Model(Policy, self.train_env,
                                 gamma=self.params['gamma'], ent_coef=self.params['ent_coef'],
@@ -64,7 +69,7 @@ class GymSolver(TestingSolver):
                                 seed=seed, verbose=0, nminibatches=nminibatches, 
                                 policy_kwargs={"net_arch": policy_params},
                                 tensorboard_log=self.log_dir, full_tensorboard_log=False,
-                                n_steps=self.params['dataset']['time_periods']*self.params['dataset']['number_of_cars'])
+                                n_steps=n_steps)
 
         # number of steps might be very large, because it might have to go through all nodes
 
@@ -114,6 +119,7 @@ class GymSolver(TestingSolver):
             "discrete": self.params["discrete"],
             "bounded_income": self.params["robust"] == 1,
             "fully_collaborative": self.params["batch_env"] == 1,
+            "randomize_drivers": self.params["randomize_drivers"],
             "debug": self.params["debug"]
         }
 

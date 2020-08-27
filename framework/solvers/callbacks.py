@@ -3,6 +3,9 @@ import numpy as np
 from stable_baselines.common.callbacks import BaseCallback
 from collections.abc import Iterable
 import logging
+import os
+
+from framework.FileManager import FileManager
 
 class EpisodeStatsLogger:
     def __init__(self, tb_writer):
@@ -62,9 +65,6 @@ class TensorboardCallback(BaseCallback):
         super(TensorboardCallback, self).__init__(verbose)
         self.episodes_recorded = set()
 
-    def _on_step(self) -> bool:
-        pass
-
     def _on_rollout_end(self) -> None:
         """
         This event is triggered before updating the policy.
@@ -102,6 +102,7 @@ class TestingCallback(BaseCallback):
         self.draw_freq = draw_freq
         self.rollout_calls = 1
         self.verbose = verbose
+        self.step_it = 0
 
     def _on_training_start(self) -> None:
         """
@@ -109,12 +110,27 @@ class TestingCallback(BaseCallback):
         """
         if self.eval_freq > 0:
             self.solver.run_tests(0, draw=self.draw, verbose=self.verbose)
+    
+    def _on_step(self) -> bool:
+        if self.draw: # assuming each step updates time (works only with taxiEnvBatch)
+            figs = self.model.get_env().env_method("render")
+            fig_dir = os.path.join(self.solver.log_dir, str(self.rollout_calls))
+            FileManager.create_path(fig_dir)
+            for i in range(len(figs)):
+                fig = figs[i]
+                fig.savefig(os.path.join(fig_dir, "env{}_it{}_fig.png".format(i, self.step_it)), dpi=None, facecolor='w', edgecolor='w',
+                    orientation='portrait', papertype=None, format=None,
+                    transparent=False, bbox_inches=None, pad_inches=0.1,
+                    frameon=None, metadata=None)
+        self.step_it += 1
 
     def _on_rollout_end(self) -> bool:
         if self.eval_freq > 0 and self.rollout_calls % self.eval_freq == 0:
             if_draw = self.draw and self.rollout_calls % self.draw_freq == 0
             self.solver.run_tests(self.rollout_calls // self.eval_freq, draw=if_draw, verbose=self.verbose)
+
         self.rollout_calls += 1
+        self.step_it = 0
         return True
 
 class RobustCallback(BaseCallback):

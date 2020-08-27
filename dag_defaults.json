@@ -107,7 +107,8 @@
       "wc": 0.1,
       "testing_epochs": 1,
       "count_neighbors": 1,
-      "penalty_for_invalid_action": 1000
+      "penalty_for_invalid_action": 1000,
+      "randomize_drivers": 1
     },
     "full_rerun": 1,
     "DEBUG": 0,
